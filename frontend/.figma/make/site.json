@@ -1,0 +1,10 @@
+{
+  "description": "Streamline your workflow by automating tasks and integrating apps to boost productivity and simplify complex processes effortlessly.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

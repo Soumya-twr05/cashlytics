@@ -1,0 +1,91 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Python / Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables
+.env
+.env.local
+.env.*
+!.env.example
+
+# Node / JS / Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store
+.next/
+out/
+build/
+dist/
+.swc/
+.vite/
+.nuxt/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Machine Learning & Data Files (Large files)
+*.csv
+*.tsv
+*.dat
+*.pkl
+*.h5
+*.hdf5
+*.pth
+*.pt
+*.onnx
+models/
+data/
+datasets/
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.spyderproject
+.spyproject

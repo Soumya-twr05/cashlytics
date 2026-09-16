@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+}
+
+:root {
+  /* Light cream background */
+  --background: #eeeee8;
+  --foreground: #1a1a1a;
+
+  /* Cards: white */
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+
+  /* Primary: teal/emerald */
+  --primary: #0d9e7e;
+  --primary-foreground: #ffffff;
+
+  /* Secondary surfaces */
+  --secondary: #f4f4ef;
+  --secondary-foreground: #374151;
+
+  /* Muted */
+  --muted: #f0f0ea;
+  --muted-foreground: #6b7280;
+
+  /* Accent = teal */
+  --accent: #0d9e7e;
+  --accent-foreground: #ffffff;
+
+  /* Borders */
+  --border: #e2e2dc;
+  --ring: #0d9e7e;
+  --radius: 8px;
+
+  /* Sidebar */
+  --sidebar: #1b3d2b;
+  --sidebar-foreground: #c8ddd2;
+  --sidebar-active: #ffffff;
+  --sidebar-active-foreground: #1b3d2b;
+  --header-bg: #1b3d2b;
+
+  /* Semantic finance */
+  --income: #0d9e7e;
+  --expense: #e85d5d;
+  --warning: #f59e0b;
+  --forecast: #06b6d4;
+  --ai-color: #818cf8;
+  --positive: #0d9e7e;
+
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-jetbrains: 'JetBrains Mono', monospace;
+}
+
+html {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d1cc; border-radius: 2px; }
+* { scrollbar-width: thin; scrollbar-color: #d1d1cc transparent; }
+
+::selection { background: rgba(13,158,126,0.15); color: #0d9e7e; }
+
+.font-mono { font-family: var(--font-jetbrains); }
+.tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+.nav-item {
+  position: relative;
+  background: transparent;
+  color: rgba(200, 221, 210, 0.75);
+  font-weight: 400;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+.nav-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: transparent;
+  transition: background 0.18s ease;
+}
+.nav-item:hover:not(.nav-item-active) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transform: translateX(3px);
+}
+.nav-item:hover:not(.nav-item-active)::before {
+  background: #0d9e7e;
+}
+.nav-item:hover:not(.nav-item-active) .nav-item-icon {
+  color: #4ecca3;
+}
+.nav-item-active {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--sidebar);
+  font-weight: 600;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
+.nav-item-active .nav-item-icon {
+  color: #1b3d2b;
+}
