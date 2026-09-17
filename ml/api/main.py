@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from ml.api.forecast_service import forecast_monthly_spending
 from ml.api.anomaly_service import detect_anomaly
 from ml.api.classifier_service import predict_category
 from ml.api.schemas import (
@@ -68,24 +69,12 @@ def detect_transaction_anomaly(
 def forecast(
     request: ForecastRequest
 ):
-    # Temporary forecast.
-    # The real forecasting engine
-    # will be connected in the next step.
-
-    forecast_value = (
-        request.current_spending
-        / request.days_available
-        * request.days_in_month
+    return forecast_monthly_spending(
+        current_spending=request.current_spending,
+        days_available=request.days_available,
+        days_in_month=request.days_in_month,
+        recent_7_day_average=request.recent_7_day_average,
+        weekday_average=request.weekday_average,
+        weekend_average=request.weekend_average,
+        historical_daily_average=request.historical_daily_average,
     )
-
-    return {
-        "forecast": round(forecast_value, 2),
-        "lower_bound": round(
-            forecast_value * 0.95,
-            2
-        ),
-        "upper_bound": round(
-            forecast_value * 1.05,
-            2
-        ),
-    }
