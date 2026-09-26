@@ -37,7 +37,7 @@ async function createTransaction(userId, input) {
   }
 
   const classified = input.category
-    ? { category: input.category, confidence: input.confidence || 100, source: "manual" }
+    ? { category: input.category, confidence: input.confidence ?? 1.0, source: "manual" }
     : await categorizeTransaction(userId, input.merchant, input.amount || 0);
 
   const doc = await Transaction.create({

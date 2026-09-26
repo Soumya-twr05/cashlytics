@@ -1,3 +1,4 @@
+
 const crypto = require("crypto");
 const User = require("../models/User");
 const OtpVerification = require("../models/OtpVerification");
@@ -13,13 +14,13 @@ function hashOTP(otp) {
 
 async function requestOtp(email) {
   const normalizedEmail = email.toLowerCase().trim();
-  
+
   // Check if an OTP was recently sent (cooldown)
   const recentOtp = await OtpVerification.findOne({
     email: normalizedEmail,
-    createdAt: { $gt: new Date(Date.now() - 60 * 1000) } // 1 minute cooldown
+    createdAt: { $gt: new Date(Date.now() - 60 * 1000) }, // 1 minute cooldown
   });
-  
+
   if (recentOtp) {
     const err = new Error("Please wait before requesting another OTP");
     err.status = 429;
@@ -33,7 +34,7 @@ async function requestOtp(email) {
   await OtpVerification.create({
     email: normalizedEmail,
     codeHash,
-    expiresAt
+    expiresAt,
   });
 
   // In production, integrate with SendGrid/AWS SES to send the email.
@@ -45,11 +46,11 @@ async function requestOtp(email) {
 
 async function verifyOtp(email, otp) {
   const normalizedEmail = email.toLowerCase().trim();
-  
+
   const otpRecord = await OtpVerification.findOne({
     email: normalizedEmail,
     used: false,
-    expiresAt: { $gt: new Date() }
+    expiresAt: { $gt: new Date() },
   }).sort({ createdAt: -1 });
 
   if (!otpRecord) {
@@ -59,30 +60,35 @@ async function verifyOtp(email, otp) {
   }
 
   if (otpRecord.attempts >= otpRecord.maxAttempts) {
-    const err = new Error("Maximum attempts exceeded. Please request a new OTP.");
+    const err = new Error(
+      "Maximum attempts exceeded. Please request a new OTP."
+    );
     err.status = 429;
     throw err;
   }
 
   const providedHash = hashOTP(otp);
+
   if (otpRecord.codeHash !== providedHash) {
     otpRecord.attempts += 1;
     await otpRecord.save();
+
     const err = new Error("Invalid OTP");
     err.status = 401;
     throw err;
   }
 
-  // Mark as used
+  // Mark OTP as used
   otpRecord.used = true;
   await otpRecord.save();
 
   // Find or create user
   let user = await User.findOne({ email: normalizedEmail });
+
   if (!user) {
     user = await User.create({
       email: normalizedEmail,
-      authProviders: ["email"]
+      authProviders: ["email"],
     });
   } else if (!user.authProviders.includes("email")) {
     user.authProviders.push("email");
@@ -90,12 +96,22 @@ async function verifyOtp(email, otp) {
   }
 
   const token = signToken(user);
-  return { token, user: publicUser(user) };
+
+  // Return onboarding status so frontend can decide
+  // whether to show onboarding or go directly to dashboard.
+  return {
+    token,
+    user: publicUser(user),
+    onboardingCompleted: user.onboardingCompleted,
+  };
 }
 
 async function getUserProfile(userId) {
   const user = await User.findById(userId);
-  return { user: publicUser(user) };
+
+  return {
+    user: publicUser(user),
+  };
 }
 
 function publicUser(user) {
@@ -106,8 +122,13 @@ function publicUser(user) {
     avatar: user.avatar,
     plan: user.plan,
     preferences: user.preferences,
-    onboardingCompleted: user.onboardingCompleted
+    onboardingCompleted: user.onboardingCompleted,
   };
 }
 
-module.exports = { requestOtp, verifyOtp, getUserProfile, publicUser };
+module.exports = {
+  requestOtp,
+  verifyOtp,
+  getUserProfile,
+  publicUser,
+};
