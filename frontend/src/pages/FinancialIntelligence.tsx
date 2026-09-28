@@ -1,40 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Legend, ReferenceLine,
 } from "recharts";
-
-const MONTHLY_DATA = [
-  { month: "Apr", income: 85000, expenses: 48000, savings: 37000 },
-  { month: "May", income: 85000, expenses: 52000, savings: 33000 },
-  { month: "Jun", income: 85000, expenses: 44000, savings: 41000 },
-  { month: "Jul", income: 97000, expenses: 58000, savings: 39000 },
-  { month: "Aug", income: 85000, expenses: 49300, savings: 35700 },
-  { month: "Sep", income: 85000, expenses: 53720, savings: 17840 },
-];
-
-const CATEGORY_TREND = [
-  { month: "Apr", food: 7200, transport: 3100, shopping: 5000, entertainment: 2100 },
-  { month: "May", food: 8100, transport: 3400, shopping: 6200, entertainment: 1800 },
-  { month: "Jun", food: 7400, transport: 2900, shopping: 4800, entertainment: 2400 },
-  { month: "Jul", food: 9200, transport: 3800, shopping: 7100, entertainment: 3200 },
-  { month: "Aug", food: 8600, transport: 3500, shopping: 5900, entertainment: 2600 },
-  { month: "Sep", food: 8420, transport: 3240, shopping: 6800, entertainment: 1850 },
-];
-
-const ANOMALIES = [
-  { month: "Jul", category: "Shopping", amount: 7100, baseline: 5200, severity: "high" },
-  { month: "Sep", category: "Electronics", amount: 8500, baseline: 3500, severity: "high" },
-  { month: "May", category: "Food", amount: 8100, baseline: 7000, severity: "medium" },
-];
-
-const METRICS = [
-  { label: "Avg Monthly Savings", value: "₹34,090", sub: "Last 6 months", color: "var(--primary)" },
-  { label: "Savings Rate", value: "21.4%", sub: "Of gross income", color: "var(--primary)" },
-  { label: "Expense Growth", value: "+2.8%", sub: "Month over month", color: "var(--warning)" },
-  { label: "Income Stability", value: "High", sub: "Consistent paycheck", color: "var(--forecast)" },
-];
+import * as api from "../lib/api";
 
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload) return null;
@@ -44,7 +14,7 @@ function ChartTooltip({ active, payload, label }: any) {
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center gap-2">
           <span style={{ color: p.color }}>●</span>
-          <span style={{ color: "var(--foreground)" }}>₹{p.value.toLocaleString("en-IN")}</span>
+          <span style={{ color: "var(--foreground)" }}>₹{Number(p.value || 0).toLocaleString("en-IN")}</span>
           <span style={{ color: "var(--muted-foreground)" }}>{p.name}</span>
         </div>
       ))}
@@ -59,11 +29,104 @@ export default function FinancialIntelligence() {
   const [timeRange, setTimeRange] = useState("6M");
   const [activeTab, setActiveTab] = useState("Trends");
 
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [categoryTrend, setCategoryTrend] = useState<any[]>([]);
+  const [anomalies, setAnomalies] = useState<any[]>([]);
+  const [forecast, setForecast] = useState<any>(null);
+  const [metrics, setMetrics] = useState<any[]>([
+    { label: "Avg Monthly Savings", value: "...", sub: "Last 6 months", color: "var(--primary)" },
+    { label: "Savings Rate", value: "...", sub: "Of gross income", color: "var(--primary)" },
+    { label: "Expense Growth", value: "...", sub: "Month over month", color: "var(--warning)" },
+    { label: "Income Stability", value: "High", sub: "Consistent paycheck", color: "var(--forecast)" },
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const [trendsRes, anomaliesRes, forecastRes, txRes] = await Promise.all([
+          api.getTrends().catch(() => ({ data: { items: [] } })),
+          api.getAnomalies().catch(() => ({ data: { items: [] } })),
+          api.getForecast().catch(() => ({ data: null })),
+          api.listTransactions({ limit: 1000 }).catch(() => ({ data: { items: [] } }))
+        ]);
+
+        const tData = (trendsRes as any)?.data?.items || [];
+        setMonthlyData(tData);
+
+        const aData = (anomaliesRes as any)?.data?.items || [];
+        setAnomalies(aData.map((a: any) => ({
+          month: new Date(a.transaction?.occurredAt || new Date()).toLocaleString('default', { month: 'short' }),
+          category: a.transaction?.category || 'Unknown',
+          amount: a.transaction?.amount || 0,
+          baseline: (a.transaction?.amount || 0) / Math.max(1.1, (a.riskScore || 0) / 10), // Estimate baseline for UI
+          severity: a.severity || 'low',
+        })));
+
+        const fData = (forecastRes as any)?.data;
+        setForecast(fData);
+
+        // Calculate Category Trends from txns
+        const txns = (txRes as any)?.data?.items || [];
+        const monthCats: Record<string, any> = {};
+        
+        txns.forEach((tx: any) => {
+          if (tx.type !== "debit") return;
+          const date = new Date(tx.occurredAt || tx.date);
+          const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const mLabel = date.toLocaleString('default', { month: 'short' });
+          if (!monthCats[month]) monthCats[month] = { month: mLabel, food: 0, transport: 0, shopping: 0, entertainment: 0, sortKey: month };
+          
+          const cat = tx.category?.toLowerCase() || '';
+          if (cat.includes('food')) monthCats[month].food += tx.amount;
+          else if (cat.includes('transport')) monthCats[month].transport += tx.amount;
+          else if (cat.includes('shop')) monthCats[month].shopping += tx.amount;
+          else monthCats[month].entertainment += tx.amount;
+        });
+        
+        const catArray = Object.values(monthCats).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+        setCategoryTrend(catArray.slice(-6));
+
+        // Update metrics
+        if (tData.length > 0) {
+          const totalSavings = tData.reduce((acc: number, cur: any) => acc + (cur.savings || 0), 0);
+          const avgSavings = totalSavings / tData.length;
+          
+          const recentIncome = tData[tData.length - 1]?.income || 1;
+          const recentSavings = tData[tData.length - 1]?.savings || 0;
+          const sr = (recentSavings / recentIncome) * 100;
+          
+          setMetrics([
+            { label: "Avg Monthly Savings", value: `₹${Math.round(avgSavings).toLocaleString("en-IN")}`, sub: "Last 6 months", color: "var(--primary)" },
+            { label: "Savings Rate", value: `${sr.toFixed(1)}%`, sub: "Of gross income", color: "var(--primary)" },
+            { label: "Forecasted Spending", value: fData?.forecast ? `₹${Math.round(fData.forecast).toLocaleString("en-IN")}` : "...", sub: "Current month", color: "var(--warning)" },
+            { label: "Anomalies Detected", value: aData.length.toString(), sub: "Recent activity", color: "var(--forecast)" },
+          ]);
+        }
+
+      } catch (err) {
+        console.error("Error fetching intelligence data", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-64 flex items-center justify-center">
+        <p style={{ color: "var(--muted-foreground)" }}>Loading Intelligence...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {/* Summary metrics */}
       <div className="grid grid-cols-4 gap-3 mb-6">
-        {METRICS.map((m) => (
+        {metrics.map((m) => (
           <div
             key={m.label}
             className="p-4 rounded-sm border"
@@ -123,72 +186,50 @@ export default function FinancialIntelligence() {
         <div className="space-y-4">
           <div className="p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
             <div className="font-semibold text-sm mb-1">Income vs Expenses vs Savings</div>
-            <div className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>Monthly breakdown — last 6 months</div>
-            <div style={{ height: "220px" }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={MONTHLY_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }} barGap={2}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="income" name="Income" fill="#10b981" opacity={0.7} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="expenses" name="Expenses" fill="#f87171" opacity={0.7} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="savings" name="Savings" fill="#22d3ee" opacity={0.7} radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <div className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>Monthly breakdown</div>
+            {monthlyData.length > 0 ? (
+              <div style={{ height: "220px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }} barGap={2}>
+                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Bar dataKey="income" name="Income" fill="#10b981" opacity={0.7} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="expenses" name="Expenses" fill="#f87171" opacity={0.7} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="savings" name="Savings" fill="#22d3ee" opacity={0.7} radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex h-40 items-center justify-center text-sm text-gray-500">No trend data available</div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-              <div className="font-semibold text-sm mb-4">Spending Baseline vs Actual</div>
-              <div className="space-y-3">
-                {[
-                  { cat: "Food & Dining", baseline: 7000, actual: 8420 },
-                  { cat: "Transport", baseline: 3200, actual: 3240 },
-                  { cat: "Shopping", baseline: 5000, actual: 6800 },
-                  { cat: "Entertainment", baseline: 2500, actual: 1850 },
-                  { cat: "Bills", baseline: 4500, actual: 4200 },
-                ].map((row) => {
-                  const ratio = row.actual / row.baseline;
-                  const color = ratio > 1.15 ? "var(--expense)" : ratio < 0.85 ? "var(--primary)" : "var(--forecast)";
-                  return (
-                    <div key={row.cat}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{row.cat}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs tabular-nums" style={{ fontFamily: "var(--font-jetbrains)", color: "var(--muted-foreground)", fontSize: "10px" }}>
-                            ₹{row.baseline.toLocaleString("en-IN")} baseline
-                          </span>
-                          <span className="text-xs font-semibold tabular-nums" style={{ fontFamily: "var(--font-jetbrains)", color, fontSize: "11px" }}>
-                            ₹{row.actual.toLocaleString("en-IN")}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="relative h-1.5 rounded-full overflow-visible" style={{ background: "var(--border)" }}>
-                        <div className="h-full rounded-full" style={{ width: `${Math.min((row.actual / 10000) * 100, 100)}%`, background: color }} />
-                        <div className="absolute top-0 h-full w-px" style={{ left: `${Math.min((row.baseline / 10000) * 100, 100)}%`, background: "var(--muted-foreground)" }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
               <div className="font-semibold text-sm mb-4">Savings Rate Trend</div>
-              <div style={{ height: "160px" }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={MONTHLY_DATA.map((d) => ({ ...d, rate: Math.round((d.savings / d.income) * 100) }))} margin={{ top: 4, right: 4, bottom: 0, left: -30 }}>
-                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                    <XAxis dataKey="month" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip formatter={(v: any) => [`${v}%`, "Savings Rate"]} />
-                    <ReferenceLine y={20} stroke="rgba(16,185,129,0.3)" strokeDasharray="4 4" label={{ value: "Target 20%", fill: "#475569", fontSize: 9 }} />
-                    <Line type="monotone" dataKey="rate" stroke="#22d3ee" strokeWidth={2} dot={{ fill: "#22d3ee", r: 3 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              {monthlyData.length > 0 ? (
+                <div style={{ height: "160px" }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthlyData.map((d) => ({ ...d, rate: d.income ? Math.round((d.savings / d.income) * 100) : 0 }))} margin={{ top: 4, right: 4, bottom: 0, left: -30 }}>
+                      <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                      <Tooltip formatter={(v: any) => [`${v}%`, "Savings Rate"]} />
+                      <ReferenceLine y={20} stroke="rgba(16,185,129,0.3)" strokeDasharray="4 4" label={{ value: "Target 20%", fill: "#475569", fontSize: 9 }} />
+                      <Line type="monotone" dataKey="rate" stroke="#22d3ee" strokeWidth={2} dot={{ fill: "#22d3ee", r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex h-32 items-center justify-center text-sm text-gray-500">No data</div>
+              )}
+            </div>
+            
+            <div className="p-5 rounded-sm border flex flex-col justify-center text-center" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+              <div className="text-sm text-gray-400 mb-2">Want to see more details?</div>
+              <button className="text-emerald-500 hover:text-emerald-400 transition-colors">Explore full reports →</button>
             </div>
           </div>
         </div>
@@ -196,22 +237,26 @@ export default function FinancialIntelligence() {
 
       {activeTab === "Categories" && (
         <div className="p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-          <div className="font-semibold text-sm mb-4">Category Trends — 6 Months</div>
-          <div style={{ height: "280px" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={CATEGORY_TREND} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ fontSize: "10px", color: "#64748b" }} />
-                <Line type="monotone" dataKey="food" name="Food" stroke="#10b981" strokeWidth={1.5} dot={false} />
-                <Line type="monotone" dataKey="transport" name="Transport" stroke="#22d3ee" strokeWidth={1.5} dot={false} />
-                <Line type="monotone" dataKey="shopping" name="Shopping" stroke="#f87171" strokeWidth={1.5} dot={false} />
-                <Line type="monotone" dataKey="entertainment" name="Entertainment" stroke="#f59e0b" strokeWidth={1.5} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <div className="font-semibold text-sm mb-4">Category Trends</div>
+          {categoryTrend.length > 0 ? (
+            <div style={{ height: "280px" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={categoryTrend} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: "10px", color: "#64748b" }} />
+                  <Line type="monotone" dataKey="food" name="Food" stroke="#10b981" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="transport" name="Transport" stroke="#22d3ee" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="shopping" name="Shopping" stroke="#f87171" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="entertainment" name="Entertainment" stroke="#f59e0b" strokeWidth={1.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex h-40 items-center justify-center text-sm text-gray-500">No category data</div>
+          )}
         </div>
       )}
 
@@ -220,7 +265,7 @@ export default function FinancialIntelligence() {
           <div className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>
             Spending events that deviated significantly from your behavioral baseline.
           </div>
-          {ANOMALIES.map((a, i) => (
+          {anomalies.length > 0 ? anomalies.map((a, i) => (
             <div
               key={i}
               className="p-5 rounded-sm border"
@@ -233,48 +278,46 @@ export default function FinancialIntelligence() {
                 <div>
                   <div className="font-semibold text-sm">{a.category} — {a.month}</div>
                   <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                    ₹{a.amount.toLocaleString("en-IN")} actual vs ₹{a.baseline.toLocaleString("en-IN")} baseline
+                    ₹{a.amount.toLocaleString("en-IN")} actual vs ~₹{Math.round(a.baseline).toLocaleString("en-IN")} baseline
                   </div>
                 </div>
                 <span
                   className="text-xs font-bold tabular-nums px-2 py-1 rounded-sm"
                   style={{ fontFamily: "var(--font-jetbrains)", background: "rgba(245,158,11,0.1)", color: "var(--warning)" }}
                 >
-                  {(a.amount / a.baseline).toFixed(1)}× normal
+                  {Math.max(1.1, (a.amount / a.baseline)).toFixed(1)}× normal
                 </span>
               </div>
               <div className="relative h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
-                <div className="h-full rounded-full" style={{ width: `${(a.baseline / a.amount) * 100}%`, background: "var(--muted-foreground)" }} />
+                <div className="h-full rounded-full" style={{ width: `${Math.min(100, (a.baseline / a.amount) * 100)}%`, background: "var(--muted-foreground)" }} />
                 <div className="h-full rounded-full absolute top-0 left-0" style={{ width: "100%", background: "var(--warning)", opacity: 0.5 }} />
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="p-8 text-center text-sm text-gray-500 border rounded-sm" style={{ borderColor: 'var(--border)' }}>
+              No anomalies detected recently. Good job!
+            </div>
+          )}
         </div>
       )}
 
       {activeTab === "Forecasts" && (
         <div className="grid grid-cols-2 gap-4">
-          {[
-            { label: "Projected Expenses (Sep)", value: "₹61,400", sub: "87% confidence", color: "var(--forecast)" },
-            { label: "Projected Savings (Sep)", value: "₹17,840", sub: "Current trajectory", color: "var(--primary)" },
-            { label: "Budget Exhaustion (Food)", value: "Sep 14", sub: "6 days early", color: "var(--warning)" },
-            { label: "Yearly Savings (2026)", value: "₹3,92,000", sub: "Projected at current rate", color: "var(--primary)" },
-          ].map((f) => (
-            <div
-              key={f.label}
-              className="p-5 rounded-sm border"
-              style={{ background: "var(--card)", borderColor: "var(--border)" }}
-            >
-              <div className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>{f.label}</div>
-              <div
-                className="font-bold tabular-nums text-2xl mb-1"
-                style={{ fontFamily: "var(--font-jetbrains)", color: f.color }}
-              >
-                {f.value}
-              </div>
-              <div className="text-xs" style={{ color: "var(--muted-foreground)", fontSize: "10px" }}>{f.sub}</div>
+          <div className="p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>Projected Expenses (Current Month)</div>
+            <div className="font-bold tabular-nums text-2xl mb-1" style={{ fontFamily: "var(--font-jetbrains)", color: "var(--forecast)" }}>
+              {forecast?.forecast ? `₹${Math.round(forecast.forecast).toLocaleString("en-IN")}` : "Data unavailable"}
             </div>
-          ))}
+            <div className="text-xs" style={{ color: "var(--muted-foreground)", fontSize: "10px" }}>Based on recent trends</div>
+          </div>
+          
+          <div className="p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>Forecast Range</div>
+            <div className="font-bold tabular-nums text-2xl mb-1" style={{ fontFamily: "var(--font-jetbrains)", color: "var(--primary)" }}>
+              {forecast?.lower_bound ? `₹${Math.round(forecast.lower_bound).toLocaleString("en-IN")} - ₹${Math.round(forecast.upper_bound).toLocaleString("en-IN")}` : "..."}
+            </div>
+            <div className="text-xs" style={{ color: "var(--muted-foreground)", fontSize: "10px" }}>95% confidence interval</div>
+          </div>
         </div>
       )}
     </div>

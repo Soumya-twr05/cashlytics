@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import * as api from "../lib/api";
 
 interface LearningEntry {
   id: number;
@@ -12,74 +13,6 @@ interface LearningEntry {
   status: "learned" | "predicting" | "pending";
 }
 
-const LEARNING_DATA: LearningEntry[] = [
-  {
-    id: 1,
-    merchant: "AMAZON",
-    aiPrediction: "Shopping",
-    userCorrection: "Electronics",
-    learnedCategory: "Electronics",
-    futureConfidence: 94,
-    transactionCount: 12,
-    lastSeen: "Sep 8",
-    status: "learned",
-  },
-  {
-    id: 2,
-    merchant: "HDFC SALARY",
-    aiPrediction: "Transfer",
-    userCorrection: "Income",
-    learnedCategory: "Income",
-    futureConfidence: 99,
-    transactionCount: 8,
-    lastSeen: "Sep 5",
-    status: "learned",
-  },
-  {
-    id: 3,
-    merchant: "SWIGGY",
-    aiPrediction: "Food & Dining",
-    userCorrection: null,
-    learnedCategory: "Food & Dining",
-    futureConfidence: 97,
-    transactionCount: 34,
-    lastSeen: "Sep 9",
-    status: "predicting",
-  },
-  {
-    id: 4,
-    merchant: "ZEPTO",
-    aiPrediction: "Shopping",
-    userCorrection: "Groceries",
-    learnedCategory: "Groceries",
-    futureConfidence: 96,
-    transactionCount: 6,
-    lastSeen: "Sep 6",
-    status: "learned",
-  },
-  {
-    id: 5,
-    merchant: "UPSTOX",
-    aiPrediction: "Transfer",
-    userCorrection: "Investment",
-    learnedCategory: "Investment",
-    futureConfidence: 91,
-    transactionCount: 4,
-    lastSeen: "Aug 30",
-    status: "learned",
-  },
-  {
-    id: 6,
-    merchant: "RAPIDO",
-    aiPrediction: "Food & Dining",
-    userCorrection: null,
-    learnedCategory: "Transport",
-    futureConfidence: 88,
-    transactionCount: 2,
-    lastSeen: "Sep 3",
-    status: "pending",
-  },
-];
 
 // Animated flow diagram for a single learning entry
 function LearningFlow({ entry }: { entry: LearningEntry }) {
@@ -212,11 +145,45 @@ function LearningFlow({ entry }: { entry: LearningEntry }) {
 }
 
 export default function AdaptiveLearning() {
-  const [selected, setSelected] = useState(LEARNING_DATA[0]);
+  const [learningData, setLearningData] = useState<LearningEntry[]>([]);
+  const [selected, setSelected] = useState<LearningEntry | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const accuracyRate = Math.round(
-    (LEARNING_DATA.filter((e) => e.status === "learned").length / LEARNING_DATA.length) * 100
-  );
+  useEffect(() => {
+    async function fetchLearning() {
+      setLoading(true);
+      try {
+        const res = await api.getLearning() as any;
+        const raw: any[] = res?.data?.items || [];
+        const mapped: LearningEntry[] = raw.map((item: any, i: number) => ({
+          id: i + 1,
+          merchant: item.merchant || item.pattern || "Unknown",
+          aiPrediction: item.originalCategory || item.aiPrediction || "Other",
+          userCorrection: item.correctedCategory || item.userCorrection || null,
+          learnedCategory: item.learnedCategory || item.correctedCategory || item.originalCategory || "Other",
+          futureConfidence: Math.round((item.confidence || 0.85) * 100),
+          transactionCount: item.count || item.transactionCount || 1,
+          lastSeen: item.lastSeen || new Date(item.updatedAt || new Date()).toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
+          status: item.userCorrection || item.correctedCategory
+            ? "learned"
+            : (item.confidence || 0) > 0.9
+            ? "predicting"
+            : "pending",
+        }));
+        setLearningData(mapped);
+        if (mapped.length > 0) setSelected(mapped[0]);
+      } catch (e) {
+        console.error("Learning data error:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLearning();
+  }, []);
+
+  const accuracyRate = learningData.length > 0
+    ? Math.round((learningData.filter((e) => e.status === "learned").length / learningData.length) * 100)
+    : 0;
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -241,10 +208,10 @@ export default function AdaptiveLearning() {
         </div>
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: "Merchant Rules Learned", value: String(LEARNING_DATA.filter((e) => e.status === "learned").length), color: "var(--primary)" },
+            { label: "Merchant Rules Learned", value: String(learningData.filter((e) => e.status === "learned").length), color: "var(--primary)" },
             { label: "Accuracy Rate", value: `${accuracyRate}%`, color: "var(--forecast)" },
-            { label: "Merchants Recognized", value: "47", color: "var(--ai-color)" },
-            { label: "Auto-categorized Today", value: "6 / 7", color: "var(--primary)" },
+            { label: "Merchants Recognized", value: String(learningData.length), color: "var(--ai-color)" },
+            { label: "Auto-categorized Today", value: loading ? "..." : `${learningData.filter(e => e.status !== "pending").length}`, color: "var(--primary)" },
           ].map((s) => (
             <div key={s.label}>
               <div
@@ -259,6 +226,13 @@ export default function AdaptiveLearning() {
         </div>
       </div>
 
+      {loading ? (
+        <div className="flex h-40 items-center justify-center text-sm" style={{ color: "var(--muted-foreground)" }}>Loading learning data...</div>
+      ) : learningData.length === 0 ? (
+        <div className="text-center py-16 text-sm" style={{ color: "var(--muted-foreground)" }}>
+          No learning data yet. As you use Cashlytics and recategorize transactions, the model builds your preferences here.
+        </div>
+      ) : (
       <div className="grid grid-cols-3 gap-4">
         {/* Merchant list */}
         <div
@@ -269,14 +243,14 @@ export default function AdaptiveLearning() {
             MERCHANT PATTERNS
           </div>
           <div>
-            {LEARNING_DATA.map((entry) => (
+            {learningData.map((entry) => (
               <div
                 key={entry.id}
                 className="flex items-center justify-between px-4 py-3 border-b cursor-pointer last:border-b-0"
                 style={{
                   borderColor: "var(--border)",
-                  background: selected.id === entry.id ? "rgba(16,185,129,0.06)" : "transparent",
-                  borderLeft: selected.id === entry.id ? "2px solid var(--primary)" : "2px solid transparent",
+                  background: selected?.id === entry.id ? "rgba(16,185,129,0.06)" : "transparent",
+                  borderLeft: selected?.id === entry.id ? "2px solid var(--primary)" : "2px solid transparent",
                 }}
                 onClick={() => setSelected(entry)}
               >
@@ -315,6 +289,7 @@ export default function AdaptiveLearning() {
         </div>
 
         {/* Flow detail */}
+        {selected && (
         <div className="col-span-2">
           <LearningFlow entry={selected} />
 
@@ -364,7 +339,9 @@ export default function AdaptiveLearning() {
             </div>
           )}
         </div>
+        )}
       </div>
+      )}
     </div>
   );
 }

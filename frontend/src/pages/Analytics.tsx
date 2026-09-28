@@ -1,45 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart, Line, BarChart, Bar, ComposedChart,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Area, ReferenceLine,
 } from "recharts";
-
-const INCOME_VS_EXPENSE = [
-  { month: "Apr", income: 85000, expense: 48000 },
-  { month: "May", income: 85000, expense: 52000 },
-  { month: "Jun", income: 85000, expense: 44000 },
-  { month: "Jul", income: 97000, expense: 58000 },
-  { month: "Aug", income: 85000, expense: 49300 },
-  { month: "Sep*", income: 85000, expense: 61400 },
-];
-
-const MERCHANT_DATA = [
-  { name: "Swiggy", total: 6240, count: 18 },
-  { name: "Amazon", total: 12300, count: 4 },
-  { name: "Zomato", total: 4100, count: 14 },
-  { name: "Netflix", total: 1947, count: 3 },
-  { name: "Ola", total: 3640, count: 13 },
-  { name: "BigBasket", total: 3720, count: 6 },
-];
-
-const SAVINGS_TREND = [
-  { month: "Apr", savings: 37000, rate: 44 },
-  { month: "May", savings: 33000, rate: 39 },
-  { month: "Jun", savings: 41000, rate: 48 },
-  { month: "Jul", savings: 39000, rate: 40 },
-  { month: "Aug", savings: 35700, rate: 42 },
-  { month: "Sep*", savings: 17840, rate: 21 },
-];
-
-const VELOCITY_DATA = [
-  { week: "W1 Aug", daily: 1680 },
-  { week: "W2 Aug", daily: 1540 },
-  { week: "W3 Aug", daily: 1720 },
-  { week: "W4 Aug", daily: 1890 },
-  { week: "W1 Sep", daily: 2050 },
-  { week: "W2 Sep", daily: 1980 },
-];
+import * as api from "../lib/api";
 
 function CT({ active, payload, label }: any) {
   if (!active || !payload) return null;
@@ -60,17 +25,168 @@ function CT({ active, payload, label }: any) {
 const CHART_TABS = ["Income vs Expense", "Savings Trend", "Top Merchants", "Spending Velocity"];
 
 export default function Analytics() {
-  const [active, setActive] = useState("Income vs Expense");
+  const [active, setActive] = useState("Top Merchants");
+  const [txns, setTxns] = useState<any[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<any[]>([]);
+  const [profileIncome, setProfileIncome] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [txRes, trendRes, profileRes] = await Promise.allSettled([
+          api.listTransactions({ limit: 1000 }) as any,
+          api.getTrends() as any,
+          api.getProfile() as any,
+        ]);
+
+        if (txRes.status === "fulfilled") {
+          setTxns((txRes.value as any)?.data?.items || []);
+        }
+
+        if (trendRes.status === "fulfilled") {
+          const items = (trendRes.value as any)?.data?.items || [];
+          setMonthlyTrend(items);
+        }
+
+        if (profileRes.status === "fulfilled") {
+          const income = (profileRes.value as any)?.data?.profile?.monthlyIncome || 0;
+          setProfileIncome(income);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const merchantMap: Record<string, { total: number; count: number }> = {};
+  let totalExpensesThisMonth = 0;
+  let totalIncomeThisMonth = 0;
+
+  // Group by week for velocity
+  const weekMap: Record<string, number> = {};
+
+  txns.forEach((tx) => {
+    const date = tx.occurredAt ? new Date(tx.occurredAt) : null;
+    if (tx.type === "debit") {
+      totalExpensesThisMonth += tx.amount || 0;
+      const m = tx.merchant || tx.category || "Unknown";
+      if (!merchantMap[m]) merchantMap[m] = { total: 0, count: 0 };
+      merchantMap[m].total += tx.amount || 0;
+      merchantMap[m].count += 1;
+
+      // Weekly velocity grouping
+      if (date) {
+        // ISO week key: YYYY-Www
+        const jan1 = new Date(date.getFullYear(), 0, 1);
+        const weekNum = Math.ceil(((date.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7);
+        const weekKey = `W${weekNum}`;
+        weekMap[weekKey] = (weekMap[weekKey] || 0) + (tx.amount || 0);
+      }
+    } else if (tx.type === "credit") {
+      totalIncomeThisMonth += tx.amount || 0;
+    }
+  });
+
+  const MERCHANT_DATA = Object.entries(merchantMap)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 6);
+
+  // Income vs Expense: use monthly trend data (real), fallback to profile income
+  const INCOME_VS_EXPENSE = monthlyTrend.length > 0
+    ? monthlyTrend.slice(-6).map((row: any) => {
+        const [year, month] = row.month.split("-");
+        const label = new Date(Number(year), Number(month) - 1, 1)
+          .toLocaleString("en-IN", { month: "short" });
+        return {
+          month: label,
+          income: row.income || profileIncome,
+          expense: row.expenses || 0,
+        };
+      })
+    : [{ month: "This Month", income: totalIncomeThisMonth || profileIncome, expense: totalExpensesThisMonth }];
+
+  // Savings Trend: derived from monthly trend
+  const SAVINGS_TREND: any[] = monthlyTrend.slice(-6).map((row: any) => {
+    const [year, month] = row.month.split("-");
+    const label = new Date(Number(year), Number(month) - 1, 1)
+      .toLocaleString("en-IN", { month: "short" });
+    const income = row.income || profileIncome;
+    const savings = row.income - row.expenses;
+    const rate = income > 0 ? Math.round((savings / income) * 100) : 0;
+    return { month: label, savings: Math.max(0, savings), rate: Math.max(0, rate) };
+  });
+
+  // Spending Velocity: weekly spend averages
+  const VELOCITY_DATA: any[] = Object.entries(weekMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-8)
+    .map(([week, total]) => ({ week, daily: Math.round(total / 7) }));
+
+  // Compute KPI values from real data
+  const avgMonthlyExpense = monthlyTrend.length > 0
+    ? Math.round(monthlyTrend.reduce((s: number, r: any) => s + r.expenses, 0) / monthlyTrend.length)
+    : totalExpensesThisMonth;
+
+  const momChange = monthlyTrend.length >= 2
+    ? (() => {
+        const prev = monthlyTrend[monthlyTrend.length - 2]?.expenses || 0;
+        const curr = monthlyTrend[monthlyTrend.length - 1]?.expenses || 0;
+        return prev > 0 ? (((curr - prev) / prev) * 100).toFixed(1) : "—";
+      })()
+    : "—";
+
+  const bestSavingsMonth = monthlyTrend.reduce((best: any, row: any) => {
+    const savings = row.income - row.expenses;
+    return savings > (best?.savings || 0) ? { month: row.month, savings } : best;
+  }, null);
+
+  const largestTx = [...txns].filter(t => t.type === "debit").sort((a, b) => (b.amount || 0) - (a.amount || 0))[0];
+
+  if (loading) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto flex items-center justify-center" style={{ minHeight: "300px" }}>
+        <p style={{ color: "var(--muted-foreground)" }}>Loading analytics...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {/* KPI row */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: "6M Avg Expenses", value: "₹51,170", sub: "Monthly", color: "var(--expense)" },
-          { label: "Expense Growth", value: "+2.8%", sub: "Month over month", color: "var(--warning)" },
-          { label: "Best Savings Month", value: "Jun 2026", sub: "₹41,000 saved", color: "var(--primary)" },
-          { label: "Largest Single Transaction", value: "₹8,500", sub: "Amazon · Sep 8", color: "var(--ai-color)" },
+          {
+            label: "Avg Monthly Expenses",
+            value: avgMonthlyExpense > 0 ? `₹${avgMonthlyExpense.toLocaleString("en-IN")}` : "—",
+            sub: "Based on history",
+            color: "var(--expense, #f87171)"
+          },
+          {
+            label: "Expense Growth",
+            value: momChange !== "—" ? `${Number(momChange) >= 0 ? "+" : ""}${momChange}%` : "—",
+            sub: "Month over month",
+            color: "var(--warning)"
+          },
+          {
+            label: "Best Savings Month",
+            value: bestSavingsMonth ? (() => {
+              const [y, m] = bestSavingsMonth.month.split("-");
+              return new Date(Number(y), Number(m) - 1, 1).toLocaleString("en-IN", { month: "short", year: "numeric" });
+            })() : "—",
+            sub: bestSavingsMonth ? `₹${Math.round(bestSavingsMonth.savings).toLocaleString("en-IN")} saved` : "No data yet",
+            color: "var(--primary)"
+          },
+          {
+            label: "Largest Single Transaction",
+            value: largestTx ? `₹${largestTx.amount.toLocaleString("en-IN")}` : "—",
+            sub: largestTx ? `${largestTx.merchant || largestTx.category || "Unknown"}` : "No transactions yet",
+            color: "var(--ai-color)"
+          },
         ].map((k) => (
           <div
             key={k.label}
@@ -152,17 +268,23 @@ export default function Analytics() {
       {active === "Top Merchants" && (
         <div className="p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <div className="font-semibold text-sm mb-4">Top Merchants by Total Spend</div>
-          <div style={{ height: "240px" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={MERCHANT_DATA} layout="vertical" margin={{ top: 4, right: 60, bottom: 0, left: 60 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} width={60} />
-                <Tooltip content={<CT />} />
-                <Bar dataKey="total" name="Total Spend" fill="#10b981" opacity={0.7} radius={[0, 2, 2, 0]} label={{ position: "right", fill: "#64748b", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {MERCHANT_DATA.length === 0 ? (
+            <div className="flex items-center justify-center" style={{ height: "240px" }}>
+              <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No expense transactions yet — add transactions to see merchant breakdown</p>
+            </div>
+          ) : (
+            <div style={{ height: "240px" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={MERCHANT_DATA} layout="vertical" margin={{ top: 4, right: 60, bottom: 0, left: 60 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} width={60} />
+                  <Tooltip content={<CT />} />
+                  <Bar dataKey="total" name="Total Spend" fill="#10b981" opacity={0.7} radius={[0, 2, 2, 0]} label={{ position: "right", fill: "#64748b", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
 
@@ -170,55 +292,69 @@ export default function Analytics() {
         <div className="p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <div className="font-semibold text-sm mb-1">Daily Spending Velocity</div>
           <div className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>Average spend per day, by week</div>
-          <div style={{ height: "240px" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={VELOCITY_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                <XAxis dataKey="week" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
-                <Tooltip content={<CT />} />
-                <ReferenceLine y={1800} stroke="rgba(245,158,11,0.4)" strokeDasharray="4 4" label={{ value: "Baseline ₹1,800/day", fill: "#f59e0b", fontSize: 9 }} />
-                <Line type="monotone" dataKey="daily" name="Daily spend" stroke="#818cf8" strokeWidth={2} dot={{ fill: "#818cf8", r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {VELOCITY_DATA.length === 0 ? (
+            <div className="flex items-center justify-center" style={{ height: "240px" }}>
+              <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No transaction data yet — add transactions to see spending velocity</p>
+            </div>
+          ) : (
+            <div style={{ height: "240px" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={VELOCITY_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                  <XAxis dataKey="week" tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#475569", fontSize: 10, fontFamily: "var(--font-jetbrains)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
+                  <Tooltip content={<CT />} />
+                  <Line type="monotone" dataKey="daily" name="Daily spend" stroke="#818cf8" strokeWidth={2} dot={{ fill: "#818cf8", r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Anomaly history */}
+      {/* Anomaly History — top high-value debit transactions */}
       <div className="mt-4 p-5 rounded-sm border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-        <div className="font-semibold text-sm mb-4">Anomaly History</div>
+        <div className="font-semibold text-sm mb-4">Top Spending Transactions</div>
         <div className="space-y-2">
-          {[
-            { month: "Sep 2026", category: "Electronics", amount: "₹8,500", factor: "2.4×", color: "var(--warning)" },
-            { month: "Jul 2026", category: "Shopping", amount: "₹7,100", factor: "1.4×", color: "var(--warning)" },
-            { month: "May 2026", category: "Food & Dining", amount: "₹8,100", factor: "1.2×", color: "var(--ai-color)" },
-          ].map((a, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 px-4 py-3 rounded-sm border"
-              style={{ background: "rgba(245,158,11,0.03)", borderColor: "rgba(245,158,11,0.15)" }}
-            >
-              <span className="text-xs" style={{ color: "var(--muted-foreground)", fontFamily: "var(--font-jetbrains)", width: "70px" }}>{a.month}</span>
-              <span className="text-sm flex-1">{a.category}</span>
-              <span
-                className="text-sm font-semibold tabular-nums"
-                style={{ fontFamily: "var(--font-jetbrains)", color: "var(--foreground)" }}
-              >
-                {a.amount}
-              </span>
-              <span
-                className="text-xs px-2 py-0.5 rounded-sm tabular-nums"
-                style={{
-                  background: "rgba(245,158,11,0.1)",
-                  color: a.color,
-                  fontFamily: "var(--font-jetbrains)",
-                }}
-              >
-                {a.factor} normal
-              </span>
-            </div>
-          ))}
+          {txns
+            .filter((t) => t.type === "debit")
+            .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+            .slice(0, 5)
+            .map((t, i) => {
+              const date = t.occurredAt ? new Date(t.occurredAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) : "—";
+              return (
+                <div
+                  key={t._id || i}
+                  className="flex items-center gap-4 px-4 py-3 rounded-sm border"
+                  style={{ background: "rgba(245,158,11,0.03)", borderColor: "rgba(245,158,11,0.15)" }}
+                >
+                  <span className="text-xs" style={{ color: "var(--muted-foreground)", fontFamily: "var(--font-jetbrains)", width: "70px" }}>{date}</span>
+                  <span className="text-sm flex-1">{t.merchant || t.category || "Unknown"}</span>
+                  <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t.category || "—"}</span>
+                  <span
+                    className="text-sm font-semibold tabular-nums"
+                    style={{ fontFamily: "var(--font-jetbrains)", color: "var(--foreground)" }}
+                  >
+                    ₹{(t.amount || 0).toLocaleString("en-IN")}
+                  </span>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-sm"
+                    style={{
+                      background: "rgba(245,158,11,0.1)",
+                      color: "var(--warning)",
+                      fontFamily: "var(--font-jetbrains)",
+                    }}
+                  >
+                    #{i + 1} spend
+                  </span>
+                </div>
+              );
+            })}
+          {txns.filter((t) => t.type === "debit").length === 0 && (
+            <p className="text-sm text-center py-4" style={{ color: "var(--muted-foreground)" }}>
+              No transactions recorded yet
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -57,15 +57,55 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     setPriorities((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < 4) {
       setStep((s) => s + 1);
     } else {
       setLoading(true);
-      setTimeout(() => {
+      try {
+        const { completeOnboarding } = await import("../lib/api");
+        
+        let monthlyIncome = 50000;
+        if (income === "lt30k") monthlyIncome = 25000;
+        else if (income === "30-60k") monthlyIncome = 45000;
+        else if (income === "60-120k") monthlyIncome = 90000;
+        else if (income === "gt120k") monthlyIncome = 150000;
+
+        let savingsPercent = 0.2;
+        if (savings === "10%") savingsPercent = 0.1;
+        else if (savings === "30%") savingsPercent = 0.3;
+        else if (savings === "40%") savingsPercent = 0.4;
+
+        const desiredMonthlySavings = monthlyIncome * savingsPercent;
+        const averageMonthlyExpenses = monthlyIncome - desiredMonthlySavings;
+
+        // Map selected goal IDs to goal objects
+        const goalObjects = goals.map((goalId) => {
+          const goalData = GOALS.find((g) => g.id === goalId);
+          return {
+            name: goalData?.label || goalId,
+            target: 100000,
+            icon: goalData?.icon || "",
+          };
+        });
+
+        // Single atomic call: saves profile + seeds income transaction + creates goals
+        await completeOnboarding({
+          monthlyIncome,
+          averageMonthlyExpenses,
+          desiredMonthlySavings,
+          spendingStyle: "moderate",
+          priorities,
+          goals: goalObjects,
+        });
+
         setStep(5);
+      } catch (err) {
+        console.error("Failed to complete onboarding:", err);
+        alert("Failed to save profile. Please try again.");
+      } finally {
         setLoading(false);
-      }, 2200);
+      }
     }
   };
 

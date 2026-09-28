@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import * as api from "../lib/api";
 
 interface Scenario {
   id: string;
@@ -12,12 +13,12 @@ interface Scenario {
   unit: string;
 }
 
-const SCENARIOS: Scenario[] = [
+const DEFAULT_SCENARIOS: Scenario[] = [
   {
     id: "shopping",
     label: "SCENARIO / LIFESTYLE ADJUSTMENT",
     question: "What if shopping cost less?",
-    description: "Your current pattern is ₹4,000 per month. Move the dial to create a more intentional baseline.",
+    description: "Reduce your shopping spend and see how it impacts your annual savings.",
     current: 4000,
     min: 1000,
     max: 4000,
@@ -27,7 +28,7 @@ const SCENARIOS: Scenario[] = [
     id: "food",
     label: "SCENARIO / DINING ADJUSTMENT",
     question: "What if you cooked more?",
-    description: "Your current food & dining spend is ₹8,420 per month. Reducing dining out can compound quickly.",
+    description: "Reducing dining out can compound quickly across a year.",
     current: 8420,
     min: 2000,
     max: 8420,
@@ -37,7 +38,7 @@ const SCENARIOS: Scenario[] = [
     id: "transport",
     label: "SCENARIO / COMMUTE ADJUSTMENT",
     question: "What if you used public transport?",
-    description: "Your current transport spend is ₹3,240 per month. Metro + bus could cut this significantly.",
+    description: "Metro + bus could cut your transport spend significantly.",
     current: 3240,
     min: 800,
     max: 3240,
@@ -59,14 +60,57 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function WhatIfSimulator() {
+  const [scenarios, setScenarios] = useState<Scenario[]>(DEFAULT_SCENARIOS);
   const [scenarioId, setScenarioId] = useState("shopping");
   const [value, setValue] = useState(2500);
 
-  const scenario = SCENARIOS.find((s) => s.id === scenarioId)!;
+  useEffect(() => {
+    // Load real category spending from the current month's transactions
+    async function loadCategorySpend() {
+      try {
+        const res = await api.listTransactions({ limit: 1000 }) as any;
+        const txns: any[] = res?.data?.items || [];
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const catMap: Record<string, number> = {};
+        txns.forEach((tx: any) => {
+          if (tx.type !== "debit") return;
+          const d = new Date(tx.occurredAt || tx.date);
+          if (d < monthStart) return;
+          const cat = (tx.category || "").toLowerCase();
+          if (cat.includes("shop")) catMap.shopping = (catMap.shopping || 0) + Number(tx.amount || 0);
+          else if (cat.includes("food") || cat.includes("dining")) catMap.food = (catMap.food || 0) + Number(tx.amount || 0);
+          else if (cat.includes("transport")) catMap.transport = (catMap.transport || 0) + Number(tx.amount || 0);
+        });
+
+        setScenarios((prev) =>
+          prev.map((s) => {
+            const realCurrent = catMap[s.id];
+            if (!realCurrent || realCurrent <= 0) return s;
+            const rounded = Math.round(realCurrent / 100) * 100;
+            return {
+              ...s,
+              current: rounded,
+              max: rounded,
+              min: Math.round(rounded * 0.2 / 100) * 100,
+              description: `Your current ${s.id === "food" ? "Food & Dining" : s.id === "shopping" ? "Shopping" : "Transport"} spend is ₹${rounded.toLocaleString("en-IN")} this month. Adjust the dial to see your projected savings.`,
+            };
+          })
+        );
+      } catch (e) {
+        // Keep defaults on error
+        console.error("WhatIf category load error:", e);
+      }
+    }
+    loadCategorySpend();
+  }, []);
+
+  const scenario = scenarios.find((s) => s.id === scenarioId)!;;
 
   // When switching scenarios, reset slider to midpoint
   const handleScenario = (id: string) => {
-    const s = SCENARIOS.find((sc) => sc.id === id)!;
+    const s = scenarios.find((sc) => sc.id === id)!;
     setValue(Math.round((s.min + s.current) / 2));
     setScenarioId(id);
   };
@@ -120,7 +164,7 @@ export default function WhatIfSimulator() {
 
       {/* Scenario tabs */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-        {SCENARIOS.map((s) => (
+        {scenarios.map((s) => (
           <button
             key={s.id}
             onClick={() => handleScenario(s.id)}

@@ -38,7 +38,7 @@ export default function SmartCapture() {
       setLoading(true);
       setError("");
 
-      const response = await api.listTransactions();
+      const response = await api.smartCaptureTransactions();
 
       // Backend response:
       // {

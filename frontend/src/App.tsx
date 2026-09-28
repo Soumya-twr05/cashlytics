@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -14,6 +15,7 @@ import AIAssistant from "./pages/AIAssistant";
 import AdaptiveLearning from "./pages/AdaptiveLearning";
 import WhatIfSimulator from "./pages/WhatIfSimulator";
 import Profile from "./pages/Profile";
+
 import { useAuth } from "./lib/auth-context";
 
 export type Page =
@@ -30,14 +32,39 @@ export type Page =
   | "simulator"
   | "profile";
 
-export type AppView = "landing" | "auth" | "onboarding" | "app";
+export type AppView =
+  | "landing"
+  | "auth"
+  | "onboarding"
+  | "app";
 
 export default function App() {
   const [view, setView] = useState<AppView>("landing");
   const [page, setPage] = useState<Page>("overview");
-  const { isAuthenticated, loading, onboardingCompleted, markOnboardingComplete } = useAuth();
 
-  // Show loading screen while checking auth
+  /*
+   * This remembers how the current authentication happened.
+   *
+   * signin → existing user → Dashboard
+   * signup → new user → Onboarding
+   * null   → normal authenticated app / guest
+   */
+  const [authMode, setAuthMode] = useState<
+    "signin" | "signup" | null
+  >(null);
+
+  const {
+    isAuthenticated,
+    loading,
+    onboardingCompleted,
+    markOnboardingComplete,
+    logout,
+  } = useAuth();
+
+  // ---------------------------------------------------------
+  // Loading
+  // ---------------------------------------------------------
+
   if (loading) {
     return (
       <div
@@ -50,26 +77,34 @@ export default function App() {
             style={{
               width: "48px",
               height: "48px",
-              background: "linear-gradient(135deg, #10b981, #059669)",
+              background:
+                "linear-gradient(135deg, #10b981, #059669)",
               color: "#052e16",
               fontFamily: "var(--font-jetbrains)",
             }}
           >
             C
           </div>
-          <p style={{ color: "var(--muted-foreground)" }}>Loading...</p>
+
+          <p style={{ color: "var(--muted-foreground)" }}>
+            Loading...
+          </p>
         </div>
       </div>
     );
   }
 
-  // If user is authenticated, determine whether to show onboarding or app
+  // ---------------------------------------------------------
+  // Authenticated user
+  // ---------------------------------------------------------
+
   if (isAuthenticated) {
     if (!onboardingCompleted) {
       return (
         <Onboarding
           onComplete={() => {
             markOnboardingComplete();
+            setAuthMode(null);
             setView("app");
             setPage("overview");
           }}
@@ -77,68 +112,115 @@ export default function App() {
       );
     }
 
-    // User is authenticated and onboarding is complete, show app
+    // -------------------------------------------------------
+    // Render application pages
+    // -------------------------------------------------------
+
     const renderPage = () => {
       switch (page) {
         case "overview":
           return <Dashboard onNavigate={setPage} />;
+
         case "transactions":
           return <TransactionsPage />;
+
         case "smart-capture":
           return <SmartCapture />;
+
         case "intelligence":
           return <FinancialIntelligence />;
+
         case "analytics":
           return <Analytics />;
+
         case "budgets":
           return <Budgets />;
+
         case "goals":
           return <Goals />;
+
         case "ai-assistant":
           return <AIAssistant />;
+
         case "learning":
           return <AdaptiveLearning />;
+
         case "simulator":
           return <WhatIfSimulator />;
+
         case "profile":
           return <Profile />;
+
         case "bills":
           return <Budgets />;
+
         default:
           return <Dashboard onNavigate={setPage} />;
       }
     };
 
     return (
-      <Layout page={page} onNavigate={setPage} onSignOut={() => setView("landing")}>
+      <Layout
+        page={page}
+        onNavigate={setPage}
+        onSignOut={() => {
+          logout();
+          setAuthMode(null);
+          setView("landing");
+          setPage("overview");
+        }}
+      >
         {renderPage()}
       </Layout>
     );
   }
 
-  // Not authenticated - show landing or auth
+  // ---------------------------------------------------------
+  // Not authenticated → Landing
+  // ---------------------------------------------------------
+
   if (view === "landing") {
     return (
       <Landing
-        onGetStarted={() => setView("auth")}
-        onSignIn={() => setView("auth")}
+        onGetStarted={() => {
+          setAuthMode(null);
+          setView("auth");
+        }}
+        onSignIn={() => {
+          setAuthMode("signin");
+          setView("auth");
+        }}
       />
     );
   }
 
+  // ---------------------------------------------------------
+  // Authentication page
+  // ---------------------------------------------------------
+
   if (view === "auth") {
     return (
       <Auth
-        onSignInSuccess={(onboardingCompleted) => {
-          // If user already completed onboarding, go directly to app
-          if (onboardingCompleted) {
-            setView("app");
-            setPage("overview");
+        onSignInSuccess={(
+          onboardingCompletedFromAuth,
+          mode
+        ) => {
+          const currentMode = mode ?? "signin";
+
+          setAuthMode(currentMode);
+          setPage("overview");
+
+          if (onboardingCompletedFromAuth) {
+            setAuthMode(null);
           }
-          // Otherwise, onboarding will be shown via the isAuthenticated check above
+
+          setView("app");
         }}
         onGuestStart={() => {
-          // Guest users skip onboarding and go directly to app
+          /*
+           * Guest users don't need onboarding.
+           */
+          setAuthMode(null);
           setView("app");
           setPage("overview");
         }}
