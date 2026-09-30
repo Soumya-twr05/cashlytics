@@ -119,7 +119,11 @@ function formatCurrency(value?: number, currency = "INR") {
   }
 }
 
-export default function Profile() {
+interface ProfileProps {
+  onUpdateProfile?: () => void;
+}
+
+export default function Profile({ onUpdateProfile }: ProfileProps) {
   const [section, setSection] = useState("account");
 
   const [loading, setLoading] = useState(true);
@@ -528,6 +532,42 @@ export default function Profile() {
                   ))}
                 </div>
               </div>
+
+              {/* Update Financial Profile */}
+              {onUpdateProfile && (
+                <div
+                  className="p-5 rounded-sm border"
+                  style={{
+                    background: "var(--card)",
+                    borderColor: "var(--border)",
+                  }}
+                >
+                  <div className="font-semibold text-sm mb-1">
+                    Financial Profile
+                  </div>
+
+                  <p
+                    className="text-xs mb-4"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    Update your income range, savings goals, and spending priorities to keep Cashlytics AI personalised.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={onUpdateProfile}
+                    className="text-xs px-4 py-2 rounded-sm font-semibold transition-opacity"
+                    style={{
+                      background: "var(--primary)",
+                      color: "var(--primary-foreground)",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                  >
+                    Update Profile →
+                  </button>
+                </div>
+              )}
 
               {/* Export */}
               <div

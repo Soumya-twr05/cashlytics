@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Logo from "../components/Logo";
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -77,15 +78,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
         className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-8"
         style={{ minHeight: "56px", background: "var(--sidebar)", backdropFilter: "blur(8px)" }}
       >
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center rounded shrink-0" style={{ width: "30px", height: "30px", background: "rgba(13,158,126,0.25)", border: "1px solid rgba(13,158,126,0.4)" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#0d9e7e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </div>
-          <div>
-            <div className="font-bold text-sm tracking-tight" style={{ color: "#fff" }}>CASHLYTICS</div>
-            <div className="text-xs" style={{ color: "rgba(200,221,210,0.5)", fontSize: "8px", letterSpacing: "0.1em" }}>ADAPTIVE FINANCE</div>
-          </div>
-        </div>
+        <Logo size={32} showText={true} rounded="rounded-md" />
         <div className="flex items-center gap-4">
           <button
             onClick={onSignIn}

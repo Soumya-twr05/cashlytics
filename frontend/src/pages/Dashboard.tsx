@@ -703,10 +703,10 @@ function ChartTooltip({ active, payload, label }: any) {
       }}
     >
       <div
-        className="mb-1 text-xs"
-        style={{ color: "rgba(200,221,210,0.6)" }}
+        className="mb-1 text-xs font-semibold"
+        style={{ color: "rgba(200,221,210,0.85)" }}
       >
-        Day {label}
+        {label}
       </div>
 
       {payload.map((p: any) => (
@@ -729,6 +729,176 @@ function ChartTooltip({ active, payload, label }: any) {
   );
 }
 
+function buildTrendsData(
+  transactions: any[],
+  range: string,
+  backendItems?: any[],
+  fallbackSnapshot?: Snapshot
+): TrendData[] {
+  // If backend returned multi-month trend and range is 1Y or 3M:
+  if (range === "1Y" && Array.isArray(backendItems) && backendItems.length >= 3) {
+    return backendItems.map((item: any, i: number) => {
+      let label = item.month || `M${i + 1}`;
+      if (item.month) {
+        const parts = item.month.split("-");
+        if (parts.length === 2) {
+          const d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+          label = d.toLocaleDateString("en-IN", { month: "short" });
+        }
+      }
+      return {
+        day: label,
+        income: Number(item.income || 0),
+        expenses: Number(item.expenses || 0),
+        savings: Number(item.savings ?? (Number(item.income || 0) - Number(item.expenses || 0))),
+      };
+    });
+  }
+
+  // Anchor to current time or latest transaction date
+  let now = new Date();
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+
+  if (safeTransactions.length > 0) {
+    const dates = safeTransactions
+      .map((t) => new Date(t.occurredAt || t.createdAt || 0).getTime())
+      .filter((time) => !isNaN(time) && time > 0);
+    if (dates.length > 0) {
+      const maxTxTime = Math.max(...dates);
+      if (maxTxTime > now.getTime()) {
+        now = new Date(maxTxTime);
+      }
+    }
+  }
+
+  if (range === "7D") {
+    const points: TrendData[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+      const dayTxns = safeTransactions.filter((t: any) => {
+        const tDate = new Date(t.occurredAt || t.createdAt || 0).toISOString().slice(0, 10);
+        return tDate === dateStr;
+      });
+
+      const income = dayTxns
+        .filter((t: any) => t.type === "credit")
+        .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+
+      const expenses = dayTxns
+        .filter((t: any) => t.type === "debit")
+        .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+
+      points.push({
+        day: label,
+        income,
+        expenses,
+        savings: income - expenses,
+      });
+    }
+    return points;
+  }
+
+  if (range === "30D") {
+    const points: TrendData[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+      const dayTxns = safeTransactions.filter((t: any) => {
+        const tDate = new Date(t.occurredAt || t.createdAt || 0).toISOString().slice(0, 10);
+        return tDate === dateStr;
+      });
+
+      const income = dayTxns
+        .filter((t: any) => t.type === "credit")
+        .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+
+      const expenses = dayTxns
+        .filter((t: any) => t.type === "debit")
+        .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+
+      points.push({
+        day: label,
+        income,
+        expenses,
+        savings: income - expenses,
+      });
+    }
+    return points;
+  }
+
+  if (range === "3M") {
+    const points: TrendData[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const start = new Date(now);
+      start.setDate(start.getDate() - (i + 1) * 7);
+      const end = new Date(now);
+      end.setDate(end.getDate() - i * 7);
+      const label = end.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+      const weekTxns = safeTransactions.filter((t: any) => {
+        const tTime = new Date(t.occurredAt || t.createdAt || 0).getTime();
+        return tTime >= start.getTime() && tTime <= end.getTime();
+      });
+
+      const income = weekTxns
+        .filter((t: any) => t.type === "credit")
+        .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+
+      const expenses = weekTxns
+        .filter((t: any) => t.type === "debit")
+        .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+
+      points.push({
+        day: label,
+        income,
+        expenses,
+        savings: income - expenses,
+      });
+    }
+    return points;
+  }
+
+  if (range === "1Y") {
+    const points: TrendData[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const label = d.toLocaleDateString("en-IN", { month: "short" });
+
+      const monthTxns = safeTransactions.filter((t: any) => {
+        const td = new Date(t.occurredAt || t.createdAt || 0);
+        return td.getFullYear() === y && td.getMonth() === m;
+      });
+
+      const income = monthTxns
+        .filter((t: any) => t.type === "credit")
+        .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+
+      const expenses = monthTxns
+        .filter((t: any) => t.type === "debit")
+        .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+
+      points.push({
+        day: label,
+        income,
+        expenses,
+        savings: income - expenses,
+      });
+    }
+    return points;
+  }
+
+  return [];
+}
+
 export default function Dashboard({
   onNavigate,
 }: DashboardProps) {
@@ -744,6 +914,8 @@ export default function Dashboard({
   });
 
   const [trends, setTrends] = useState<TrendData[]>([]);
+  const [rawTransactions, setRawTransactions] = useState<any[]>([]);
+  const [backendTrendItems, setBackendTrendItems] = useState<any[]>([]);
 
   const [categories, setCategories] = useState<CategorySpend[]>([]);
 
@@ -757,459 +929,154 @@ export default function Dashboard({
 
   const [error, setError] = useState("");
 
+  const handleTimeRangeChange = (range: string) => {
+    setTimeRange(range);
+    setTrends(buildTrendsData(rawTransactions, range, backendTrendItems, snapshot));
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
-
-  useEffect(() => {
-    if (!loading) {
-      fetchDashboardData();
-    }
-  }, [timeRange]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError("");
 
-      /*
-       * ============================================================
-       * 1. DASHBOARD INTELLIGENCE
-       * ============================================================
-       *
-       * Backend response:
-       *
-       * {
-       *   success: true,
-       *   data: {
-       *     health: {
-       *       score,
-       *       income,
-       *       expenses,
-       *       savings,
-       *       savingsRate,
-       *       budgetsExceeded,
-       *       trajectory
-       *     },
-       *     categories: [
-       *       {
-       *         _id,
-       *         total,
-       *         count
-       *       }
-       *     ],
-       *     range
-       *   }
-       * }
-       */
+      const [intelligenceResponse, snapshotResponse, transactionsResponse, trendsResponse, captureResponse] =
+        await Promise.all([
+          api.getDashboardIntelligence().catch((e) => {
+            console.error("Dashboard intelligence error:", e);
+            return null;
+          }),
+          api.getFinancialSnapshot().catch((e) => {
+            console.error("Snapshot error:", e);
+            return null;
+          }),
+          api.listTransactions({ limit: 1000 }).catch((e) => {
+            console.error("List transactions error:", e);
+            return null;
+          }),
+          api.getTrends().catch((e) => {
+            console.error("Trends error:", e);
+            return null;
+          }),
+          api.smartCaptureTransactions().catch((e) => {
+            console.error("Capture error:", e);
+            return null;
+          }),
+        ]);
 
-      let dashboardData: any = null;
+      // 1. Transactions
+      const rawTxns =
+        (transactionsResponse as any)?.data?.items ??
+        (transactionsResponse as any)?.data ??
+        [];
+      const transactionList = Array.isArray(rawTxns) ? rawTxns : [];
+      setRawTransactions(transactionList);
 
-      try {
-        const intelligenceResponse =
-          (await api.getDashboardIntelligence()) as any;
+      // 2. Trend items from backend
+      const rawTrendItems =
+        (trendsResponse as any)?.data?.items ??
+        (trendsResponse as any)?.data?.trends ??
+        (Array.isArray((trendsResponse as any)?.data) ? (trendsResponse as any).data : []);
+      const trendItemsList = Array.isArray(rawTrendItems) ? rawTrendItems : [];
+      setBackendTrendItems(trendItemsList);
 
-        dashboardData = intelligenceResponse?.data || null;
+      // 3. Health & Snapshot
+      const dashboardData = (intelligenceResponse as any)?.data || null;
+      const health: DashboardHealth = dashboardData?.health || {
+        score: 0,
+        income: 0,
+        expenses: 0,
+        savings: 0,
+        savingsRate: 0,
+        budgetsExceeded: 0,
+        trajectory: "Needs attention",
+      };
 
-        console.log(
-          "Dashboard intelligence:",
-          dashboardData
+      setHealthScore(Number(health.score ?? 0));
+      setTrajectory(health.trajectory || "Needs attention");
+
+      const snapshotData = (snapshotResponse as any)?.data;
+      const updatedSnapshot: Snapshot = {
+        income: Number(snapshotData?.income ?? health.income ?? 0),
+        expenses: Number(snapshotData?.expenses ?? health.expenses ?? 0),
+        savings: Number(snapshotData?.savings ?? health.savings ?? 0),
+        netLiquid: Number(
+          snapshotData?.netLiquid ??
+            (Number(snapshotData?.income ?? health.income ?? 0) -
+              Number(snapshotData?.expenses ?? health.expenses ?? 0))
+        ),
+        savingsRate: Number(snapshotData?.savingsRate ?? health.savingsRate ?? 0),
+        trajectory: snapshotData?.trajectory ?? health.trajectory ?? "Needs attention",
+      };
+      setSnapshot(updatedSnapshot);
+
+      // 4. Calculate Trends from transactions and backend items
+      const calculatedTrends = buildTrendsData(transactionList, timeRange, trendItemsList, updatedSnapshot);
+      setTrends(calculatedTrends);
+
+      // 5. Categories
+      const backendCategories: DashboardCategory[] = Array.isArray(dashboardData?.categories)
+        ? dashboardData.categories
+        : [];
+
+      if (backendCategories.length > 0) {
+        const totalCategorySpend = backendCategories.reduce(
+          (sum, cat) => sum + Number(cat.total || 0),
+          0
         );
 
-        const health: DashboardHealth =
-          dashboardData?.health || {
-            score: 0,
-            income: 0,
-            expenses: 0,
-            savings: 0,
-            savingsRate: 0,
-            budgetsExceeded: 0,
-            trajectory: "Needs attention",
-          };
-
-        /*
-         * Health score
-         */
-        setHealthScore(
-          Number(health.score ?? 0)
-        );
-
-        /*
-         * Trajectory
-         */
-        setTrajectory(
-          health.trajectory || "Needs attention"
-        );
-
-        /*
-         * Use intelligence data for the snapshot
-         * because it is already calculated from transactions.
-         */
-        setSnapshot({
-          income: Number(health.income ?? 0),
-          expenses: Number(health.expenses ?? 0),
-          savings: Number(health.savings ?? 0),
-          netLiquid:
-            Number(health.income ?? 0) -
-            Number(health.expenses ?? 0),
-          savingsRate: Number(
-            health.savingsRate ?? 0
-          ),
-          trajectory:
-            health.trajectory ||
-            "Needs attention",
-        });
-
-        /*
-         * ========================================================
-         * Categories
-         * ========================================================
-         *
-         * Backend:
-         *
-         * [
-         *   {
-         *     _id: "Entertainment",
-         *     total: 9700,
-         *     count: 2
-         *   }
-         * ]
-         */
-
-        const backendCategories: DashboardCategory[] =
-          Array.isArray(dashboardData?.categories)
-            ? dashboardData.categories
-            : [];
-
-        const totalCategorySpend =
-          backendCategories.reduce(
-            (sum, category) =>
-              sum + Number(category.total || 0),
-            0
-          );
-
-        const categoryList: CategorySpend[] =
-          backendCategories
-            .map((category) => {
-              const name =
-                category._id || "Other";
-
-              const amount =
-                Number(category.total || 0);
-
-              return {
-                name,
-                amount,
-                color:
-                  CATEGORY_COLORS[name] ||
-                  "#6b7280",
-                pct:
-                  totalCategorySpend > 0
-                    ? Math.round(
-                        (amount /
-                          totalCategorySpend) *
-                          100
-                      )
-                    : 0,
-              };
-            })
-            .sort(
-              (a, b) =>
-                b.amount - a.amount
-            )
-            .slice(0, 5);
+        const categoryList: CategorySpend[] = backendCategories
+          .map((cat) => {
+            const name = cat._id || "Other";
+            const amount = Number(cat.total || 0);
+            return {
+              name,
+              amount,
+              color: CATEGORY_COLORS[name] || "#6b7280",
+              pct: totalCategorySpend > 0 ? Math.round((amount / totalCategorySpend) * 100) : 0,
+            };
+          })
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 5);
 
         setCategories(categoryList);
-      } catch (e) {
-        console.error(
-          "Dashboard intelligence error:",
-          e
-        );
+      } else if (transactionList.length > 0) {
+        // Fallback: derive categories from transactions
+        const categoryMap: Record<string, number> = {};
+        transactionList.forEach((t: any) => {
+          if (t.type === "credit") return;
+          const cat = t.category || "Other";
+          categoryMap[cat] = (categoryMap[cat] || 0) + Number(t.amount || 0);
+        });
 
-        /*
-         * Do not break the entire dashboard if
-         * intelligence fails.
-         */
+        const total = Object.values(categoryMap).reduce((s, a) => s + a, 0);
+        const fallbackList: CategorySpend[] = Object.entries(categoryMap)
+          .map(([name, amount]) => ({
+            name,
+            amount,
+            color: CATEGORY_COLORS[name] || "#6b7280",
+            pct: total > 0 ? Math.round((amount / total) * 100) : 0,
+          }))
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 5);
+
+        setCategories(fallbackList);
+      } else {
+        setCategories([]);
       }
 
-      /*
-       * ============================================================
-       * 2. FINANCIAL SNAPSHOT
-       * ============================================================
-       */
-
-      try {
-        const snapshotResponse =
-          (await api.getFinancialSnapshot()) as any;
-
-        const snapshotData =
-          snapshotResponse?.data;
-
-        if (snapshotData) {
-          setSnapshot((previous) => ({
-            income: Number(
-              snapshotData.income ??
-                previous.income ??
-                0
-            ),
-
-            expenses: Number(
-              snapshotData.expenses ??
-                previous.expenses ??
-                0
-            ),
-
-            savings: Number(
-              snapshotData.savings ??
-                previous.savings ??
-                0
-            ),
-
-            netLiquid: Number(
-              snapshotData.netLiquid ??
-                (
-                  Number(
-                    snapshotData.income ??
-                      previous.income ??
-                      0
-                  ) -
-                  Number(
-                    snapshotData.expenses ??
-                      previous.expenses ??
-                      0
-                  )
-                )
-            ),
-
-            savingsRate: Number(
-              snapshotData.savingsRate ??
-                previous.savingsRate ??
-                0
-            ),
-
-            trajectory:
-              snapshotData.trajectory ??
-              previous.trajectory ??
-              "Needs attention",
-          }));
-        }
-      } catch (e) {
-        console.error(
-          "Snapshot error:",
-          e
-        );
-      }
-
-      /*
-       * ============================================================
-       * 3. TRENDS
-       * ============================================================
-       */
-
-      try {
-        const trendsResponse =
-          (await api.getTrends()) as any;
-
-        const rawTrends =
-          trendsResponse?.data?.trends ??
-          trendsResponse?.data ??
-          [];
-
-        if (Array.isArray(rawTrends)) {
-          const normalizedTrends =
-            rawTrends
-              .map((item: any, index: number) => ({
-                day:
-                  item.day ??
-                  item.date ??
-                  item.label ??
-                  String(index + 1),
-
-                savings: Number(
-                  item.savings ??
-                    item.saved ??
-                    0
-                ),
-
-                expenses: Number(
-                  item.expenses ??
-                    item.expense ??
-                    0
-                ),
-
-                income: Number(
-                  item.income ??
-                    0
-                ),
-              }))
-              .slice(0, 15);
-
-          setTrends(normalizedTrends);
-        } else {
-          setTrends([]);
-        }
-      } catch (e) {
-        console.error(
-          "Trends error:",
-          e
-        );
-
-        setTrends([]);
-      }
-
-      /*
-       * ============================================================
-       * 4. TRANSACTION FALLBACK FOR CATEGORIES
-       * ============================================================
-       *
-       * If the intelligence endpoint does not return categories,
-       * calculate them from real transactions.
-       */
-
-      try {
-        if (categories.length === 0) {
-          const transactionResponse =
-            (await api.listTransactions({
-              limit: 1000,
-            })) as any;
-
-          const transactionItems =
-            transactionResponse?.data?.items ??
-            transactionResponse?.data ??
-            [];
-
-          if (
-            Array.isArray(transactionItems) &&
-            transactionItems.length > 0
-          ) {
-            const categoryMap: Record<
-              string,
-              number
-            > = {};
-
-            transactionItems.forEach(
-              (transaction: any) => {
-                /*
-                 * Only count debit transactions
-                 * as spending.
-                 */
-                if (
-                  transaction.type ===
-                  "credit"
-                ) {
-                  return;
-                }
-
-                const category =
-                  transaction.category ||
-                  "Other";
-
-                const amount =
-                  Number(
-                    transaction.amount || 0
-                  );
-
-                categoryMap[category] =
-                  (categoryMap[category] ||
-                    0) + amount;
-              }
-            );
-
-            const total =
-              Object.values(
-                categoryMap
-              ).reduce(
-                (sum, amount) =>
-                  sum + amount,
-                0
-              );
-
-            const fallbackCategories =
-              Object.entries(categoryMap)
-                .map(
-                  ([category, amount]) => ({
-                    name: category,
-                    amount,
-                    color:
-                      CATEGORY_COLORS[
-                        category
-                      ] || "#6b7280",
-                    pct:
-                      total > 0
-                        ? Math.round(
-                            (amount /
-                              total) *
-                              100
-                          )
-                        : 0,
-                  })
-                )
-                .sort(
-                  (a, b) =>
-                    b.amount -
-                    a.amount
-                )
-                .slice(0, 5);
-
-            /*
-             * Only use fallback when the
-             * intelligence endpoint did not
-             * provide categories.
-             */
-            if (
-              fallbackCategories.length >
-              0
-            ) {
-              setCategories(
-                fallbackCategories
-              );
-            }
-          }
-        }
-      } catch (e) {
-        console.error(
-          "Transaction category fallback error:",
-          e
-        );
-      }
-
-      /*
-       * ============================================================
-       * 5. SMART CAPTURE
-       * ============================================================
-       */
-
-      try {
-        const captureResponse =
-          (await api.smartCaptureTransactions()) as any;
-
-        const captureData =
-          captureResponse?.data?.items ??
-          captureResponse?.data ??
-          [];
-
-        setPendingCaptures(
-          Array.isArray(captureData)
-            ? captureData.length
-            : 0
-        );
-      } catch (e) {
-        console.error(
-          "Capture error:",
-          e
-        );
-
-        setPendingCaptures(0);
-      }
+      // 6. Smart captures
+      const captureData =
+        (captureResponse as any)?.data?.items ??
+        (captureResponse as any)?.data ??
+        [];
+      setPendingCaptures(Array.isArray(captureData) ? captureData.length : 0);
     } catch (error) {
-      console.error(
-        "Error fetching dashboard data:",
-        error
-      );
-
-      setError(
-        "Unable to load some dashboard data."
-      );
+      console.error("Error fetching dashboard data:", error);
+      setError("Unable to load some dashboard data.");
     } finally {
       setLoading(false);
     }
@@ -1705,7 +1572,7 @@ export default function Dashboard({
                   <button
                     key={range}
                     onClick={() =>
-                      setTimeRange(range)
+                      handleTimeRangeChange(range)
                     }
                     className="px-3 py-1 text-xs font-medium transition-all"
                     style={{
@@ -1734,17 +1601,35 @@ export default function Dashboard({
             </div>
           </div>
 
-          <h2
-            className="font-semibold text-base mb-4"
-            style={{
-              color:
-                "var(--foreground)",
-              letterSpacing:
-                "-0.01em",
-            }}
-          >
-            Income, expenses & savings
-          </h2>
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+            <h2
+              className="font-semibold text-base"
+              style={{
+                color:
+                  "var(--foreground)",
+                letterSpacing:
+                  "-0.01em",
+              }}
+            >
+              Income, expenses & savings
+            </h2>
+
+            {/* Chart Legend */}
+            <div className="flex items-center gap-4 text-xs" style={{ color: "rgba(200,221,210,0.75)" }}>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#06b6d4" }} />
+                <span>Income</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#f87171" }} />
+                <span>Expenses</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#0d9e7e" }} />
+                <span>Savings</span>
+              </div>
+            </div>
+          </div>
 
           {trends.length > 0 ? (
             <div style={{ height: "200px" }}>
@@ -1769,6 +1654,8 @@ export default function Dashboard({
 
                   <XAxis
                     dataKey="day"
+                    minTickGap={16}
+                    interval="preserveStartEnd"
                     tick={{
                       fill: "#9ca3af",
                       fontSize: 10,

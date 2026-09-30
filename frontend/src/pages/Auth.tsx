@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { requestOtp, saveToken, verifyOtp } from "../lib/api";
+import Logo from "../components/Logo";
 
 interface AuthProps {
   onSignInSuccess: (
@@ -177,20 +178,8 @@ export default function Auth({
       <div className="w-full max-w-md px-6 py-12">
 
         {/* Logo */}
-        <div className="flex items-center gap-2 mb-10 justify-center">
-          <div
-            className="flex items-center justify-center rounded-sm text-xs font-bold"
-            style={{
-              width: "32px",
-              height: "32px",
-              background: "linear-gradient(135deg, #10b981, #059669)",
-              color: "#052e16",
-              fontFamily: "var(--font-jetbrains)",
-            }}
-          >
-            C
-          </div>
-
+        <div className="flex items-center gap-2.5 mb-10 justify-center">
+          <Logo size={32} rounded="rounded-md" />
           <span className="font-bold text-sm tracking-tight">
             CASHLYTICS
           </span>

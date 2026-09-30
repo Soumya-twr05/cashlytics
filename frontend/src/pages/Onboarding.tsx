@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { completeOnboarding } from "../lib/api";
+import Logo from "../components/Logo";
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -48,6 +50,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [priorities, setPriorities] = useState<string[]>([]);
   const [savings, setSavings] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const toggleGoal = (id: string) => {
     setGoals((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
@@ -59,12 +62,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
   const handleNext = async () => {
     if (step < 4) {
+      setApiError(null);
       setStep((s) => s + 1);
     } else {
       setLoading(true);
+      setApiError(null);
       try {
-        const { completeOnboarding } = await import("../lib/api");
-        
         let monthlyIncome = 50000;
         if (income === "lt30k") monthlyIncome = 25000;
         else if (income === "30-60k") monthlyIncome = 45000;
@@ -100,9 +103,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         });
 
         setStep(5);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to complete onboarding:", err);
-        alert("Failed to save profile. Please try again.");
+        setApiError(
+          err?.message || "Failed to save profile. Please check the backend is running and try again."
+        );
       } finally {
         setLoading(false);
       }
@@ -124,18 +129,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     >
       <div className="w-full max-w-lg px-6 py-12">
         {/* Logo */}
-        <div className="flex items-center gap-2 mb-10">
-          <div
-            className="flex items-center justify-center rounded-sm text-xs font-bold"
-            style={{
-              width: "26px", height: "26px",
-              background: "linear-gradient(135deg, #10b981, #059669)",
-              color: "#052e16",
-              fontFamily: "var(--font-jetbrains)",
-            }}
-          >
-            C
-          </div>
+        <div className="flex items-center gap-2.5 mb-10">
+          <Logo size={28} rounded="rounded-md" />
           <span className="font-bold text-sm tracking-tight">CASHLYTICS</span>
         </div>
 
@@ -333,10 +328,23 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           </div>
         )}
 
+        {apiError && (
+          <div
+            className="mt-6 p-3 rounded-sm text-xs"
+            style={{
+              background: "rgba(248,113,113,0.08)",
+              borderLeft: "3px solid var(--expense, #f87171)",
+              color: "var(--foreground)",
+            }}
+          >
+            <span style={{ fontWeight: 600 }}>Error: </span>{apiError}
+          </div>
+        )}
+
         {step < 5 && (
-          <div className="flex items-center justify-between mt-10">
+          <div className="flex items-center justify-between mt-6">
             <button
-              onClick={() => setStep((s) => Math.max(1, s - 1))}
+              onClick={() => { setApiError(null); setStep((s) => Math.max(1, s - 1)); }}
               className="text-sm"
               style={{ color: "var(--muted-foreground)" }}
               disabled={step === 1}

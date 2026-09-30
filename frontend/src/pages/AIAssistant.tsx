@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import Logo from "../components/Logo";
 
 interface Message {
   id: number;
@@ -146,12 +147,7 @@ function MessageBubble({ message }: { message: Message }) {
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
       {!isUser && (
-        <div
-          className="flex items-center justify-center rounded-sm shrink-0 self-start mt-1"
-          style={{ width: "28px", height: "28px", background: "rgba(129,140,248,0.15)", color: "var(--ai-color)", fontSize: "12px" }}
-        >
-          ✦
-        </div>
+        <Logo size={28} className="mt-1" rounded="rounded-md" />
       )}
       <div style={{ maxWidth: "75%" }}>
         <div
@@ -294,12 +290,7 @@ export default function AIAssistant() {
         ))}
         {loading && (
           <div className="flex gap-3">
-            <div
-              className="flex items-center justify-center rounded-sm"
-              style={{ width: "28px", height: "28px", background: "rgba(129,140,248,0.15)", color: "var(--ai-color)", fontSize: "12px" }}
-            >
-              ✦
-            </div>
+            <Logo size={28} className="mt-1" rounded="rounded-md" />
             <div
               className="px-4 py-3 rounded-sm text-sm"
               style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted-foreground)" }}

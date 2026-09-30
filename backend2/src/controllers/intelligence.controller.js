@@ -25,7 +25,7 @@ async function anomalies(req, res, next) {
 async function trends(req, res, next) {
   try {
     const items = await monthlyTrend(req.userId, Number(req.query.months) || 6);
-    return success(res, { items });
+    return success(res, { items, trends: items });
   } catch (err) {
     return next(err);
   }

@@ -53,6 +53,12 @@ export default function App() {
     "signin" | "signup" | null
   >(null);
 
+  /*
+   * When true, show the Onboarding screen even if onboardingCompleted is true.
+   * Used when the user wants to update their profile from the Profile page.
+   */
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   const {
     isAuthenticated,
     loading,
@@ -99,12 +105,14 @@ export default function App() {
   // ---------------------------------------------------------
 
   if (isAuthenticated) {
-    if (!onboardingCompleted) {
+    // Show onboarding if: not yet completed, OR user explicitly requested update
+    if (!onboardingCompleted || showOnboarding) {
       return (
         <Onboarding
           onComplete={() => {
             markOnboardingComplete();
             setAuthMode(null);
+            setShowOnboarding(false);
             setView("app");
             setPage("overview");
           }}
@@ -149,7 +157,13 @@ export default function App() {
           return <WhatIfSimulator />;
 
         case "profile":
-          return <Profile />;
+          return (
+            <Profile
+              onUpdateProfile={() => {
+                setShowOnboarding(true);
+              }}
+            />
+          );
 
         case "bills":
           return <Budgets />;
@@ -206,15 +220,25 @@ export default function App() {
           mode
         ) => {
           const currentMode = mode ?? "signin";
-
           setAuthMode(currentMode);
           setPage("overview");
 
-          if (onboardingCompletedFromAuth) {
+          if (currentMode === "signup") {
+            /*
+             * New sign-up: always go to onboarding first.
+             * The onboarding screen will be shown because onboardingCompleted
+             * will be false for a brand-new user.
+             */
+            setView("app");
+          } else {
+            /*
+             * Sign-in: go straight to dashboard.
+             * If onboarding was never completed (rare), the authenticated
+             * block above will still show onboarding.
+             */
             setAuthMode(null);
+            setView("app");
           }
-
-          setView("app");
         }}
         onGuestStart={() => {
           /*
