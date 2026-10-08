@@ -1,13 +1,25 @@
 const { chat } = require("../services/ollama.service");
-const { computeHealth } = require("../services/intelligence.service");
+const { buildAssistantContext } = require("../services/assistant.service");
 const { success } = require("../utils/response");
 
 async function ask(req, res, next) {
   try {
     const question = req.body.question || req.body.prompt || "";
-    const facts = await computeHealth(req.userId);
-    const reply = await chat(question, facts);
-    return success(res, { reply: reply.text, source: reply.source });
+
+    const context = await buildAssistantContext(req.userId);
+
+    const reply = await chat(question, context.health);
+
+    return success(res, {
+      reply: reply.text,
+      source: reply.source,
+      context: {
+        categories: context.categories,
+        recentTransactions: context.recentTransactions,
+        budgets: context.budgets,
+        goals: context.goals,
+      },
+    });
   } catch (err) {
     return next(err);
   }
@@ -15,7 +27,6 @@ async function ask(req, res, next) {
 
 async function history(req, res, next) {
   try {
-    // In backend2, assistant history is kept in-memory or returned empty for now.
     return success(res, { items: [] });
   } catch (err) {
     return next(err);
