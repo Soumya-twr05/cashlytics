@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import Logo from "../components/Logo";
+import * as api from "../lib/api";
 
 interface Message {
   id: number;
@@ -242,18 +243,62 @@ export default function AIAssistant() {
     };
   };
 
-  const handleSend = (text?: string) => {
+
+  const handleSend = async (text?: string) => {
     const q = (text || input).trim();
-    if (!q) return;
-    const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-    const userMsg: Message = { id: ++msgId, role: "user", content: q, time: now };
+
+    if (!q || loading) return;
+
+    const now = new Date().toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const userMsg: Message = {
+      id: ++msgId,
+      role: "user",
+      content: q,
+      time: now,
+    };
+
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
-    setTimeout(() => {
-      setMessages((prev) => [...prev, getResponse(q)]);
+
+    try {
+      const response = await api.askAssistant(q);
+
+      const assistantMsg: Message = {
+        id: ++msgId,
+        role: "assistant",
+        content:
+          response.data?.reply ||
+          "I couldn't generate a response right now. Please try again.",
+        time: new Date().toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch (error) {
+      const errorMsg: Message = {
+        id: ++msgId,
+        role: "assistant",
+        content:
+          error instanceof Error
+            ? error.message
+            : "Unable to connect to the Cashlytics AI assistant.",
+        time: new Date().toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setLoading(false);
-    }, 1200 + Math.random() * 600);
+    }
   };
 
   return (

@@ -8,11 +8,14 @@ async function ask(req, res, next) {
 
     const context = await buildAssistantContext(req.userId);
 
-    const reply = await chat(question, context.health);
+    const result = await chat(question, context);
 
     return success(res, {
-      reply: reply.text,
-      source: reply.source,
+      reply: result.reply,
+      insights: result.insights || [],
+      suggestions: result.suggestions || [],
+      chart: result.chart,
+      source: result.source,
       context: {
         categories: context.categories,
         recentTransactions: context.recentTransactions,
