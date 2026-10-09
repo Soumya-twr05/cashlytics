@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Page } from "../App";
 import Logo from "./Logo";
+import { useAuth } from "../lib/auth-context";
 
 interface NavItem {
   id: Page | "bills";
@@ -165,6 +166,11 @@ export default function Layout({
 }: LayoutProps) {
   const [navOpen, setNavOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const { user } = useAuth();
+  const displayName = user?.name?.trim() || user?.email?.split("@")[0] || "Account";
+  const displayEmail = user?.email || "Cashlytics user";
+  const userInitial = (displayName[0] || "U").toUpperCase();
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -560,7 +566,7 @@ export default function Layout({
                   border: "1px solid rgba(13,158,126,0.4)",
                 }}
               >
-                A
+                {userInitial}
               </button>
 
               {profileOpen && (
@@ -595,7 +601,7 @@ export default function Layout({
                             "1px solid rgba(13,158,126,0.35)",
                         }}
                       >
-                        A
+                        {userInitial}
                       </div>
 
                       <div className="min-w-0">
@@ -603,7 +609,7 @@ export default function Layout({
                           className="text-sm font-semibold truncate"
                           style={{ color: "#ffffff" }}
                         >
-                          Account
+                          {displayName}
                         </div>
 
                         <div
@@ -613,7 +619,7 @@ export default function Layout({
                               "rgba(200,221,210,0.55)",
                           }}
                         >
-                          Cashlytics user
+                          {displayEmail}
                         </div>
                       </div>
                     </div>

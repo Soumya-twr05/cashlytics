@@ -6,6 +6,7 @@ const {
 
 const {
   success,
+  created,
   fail,
 } = require("../utils/response");
 
@@ -13,7 +14,7 @@ async function requestOtpController(req, res, next) {
   try {
     const result = await requestOtp(req.body.email, req.body.mode);
 
-    return success(
+    return created(
       res,
       result,
       "OTP sent"

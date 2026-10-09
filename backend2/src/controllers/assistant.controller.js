@@ -1,14 +1,36 @@
 const { chat } = require("../services/ollama.service");
 const { buildAssistantContext } = require("../services/assistant.service");
+const AssistantMessage = require("../models/AssistantMessage");
 const { success } = require("../utils/response");
 
 async function ask(req, res, next) {
   try {
     const question = req.body.question || req.body.prompt || "";
 
-    const context = await buildAssistantContext(req.userId);
+    // Save user message to database
+    if (req.userId && question.trim()) {
+      await AssistantMessage.create({
+        user: req.userId,
+        role: "user",
+        content: question.trim(),
+      });
+    }
 
+    const context = await buildAssistantContext(req.userId);
     const result = await chat(question, context);
+
+    // Save assistant reply to database
+    if (req.userId && result?.reply) {
+      await AssistantMessage.create({
+        user: req.userId,
+        role: "assistant",
+        content: result.reply,
+        insights: result.insights || [],
+        suggestions: result.suggestions || [],
+        chart: result.chart || null,
+        source: result.source || "ollama",
+      });
+    }
 
     return success(res, {
       reply: result.reply,
@@ -30,10 +52,24 @@ async function ask(req, res, next) {
 
 async function history(req, res, next) {
   try {
-    return success(res, { items: [] });
+    const items = await AssistantMessage.find({ user: req.userId })
+      .sort({ createdAt: 1 })
+      .limit(100)
+      .lean();
+
+    return success(res, { items });
   } catch (err) {
     return next(err);
   }
 }
 
-module.exports = { ask, history };
+async function clearHistory(req, res, next) {
+  try {
+    await AssistantMessage.deleteMany({ user: req.userId });
+    return success(res, { message: "Conversation history cleared successfully" });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { ask, history, clearHistory };

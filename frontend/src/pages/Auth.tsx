@@ -54,13 +54,19 @@ export default function Auth({
     setLoading(true);
 
     try {
-      await requestOtp(normalizedEmail, mode);
+      const res = await requestOtp(normalizedEmail, mode);
 
       setOtpSent(true);
 
-      setMessage(
-        "OTP sent successfully. Check the backend terminal for the development OTP."
-      );
+      const devOtp = (res as any)?.data?.otp;
+      if (devOtp) {
+        setOtp(devOtp);
+        setMessage(`OTP sent! Development OTP: ${devOtp} (auto-filled)`);
+      } else {
+        setMessage(
+          "OTP sent successfully. Check your email or backend terminal for OTP."
+        );
+      }
     } catch (err) {
       setError(
         err instanceof Error

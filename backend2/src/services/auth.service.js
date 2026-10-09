@@ -14,20 +14,6 @@ function hashOTP(otp) {
 async function requestOtp(email, mode = "signin") {
   const normalizedEmail = email.toLowerCase().trim();
 
-  let user = await User.findOne({ email: normalizedEmail });
-
-  if (mode === "signin" && !user) {
-    const err = new Error("Account not found. Please create an account first.");
-    err.status = 404;
-    throw err;
-  }
-
-  if (mode === "signup" && user) {
-    const err = new Error("An account already exists with this email. Please sign in.");
-    err.status = 409;
-    throw err;
-  }
-
   // Check if an OTP was recently sent
   const recentOtp = await OtpVerification.findOne({
     email: normalizedEmail,
@@ -65,6 +51,7 @@ async function requestOtp(email, mode = "signin") {
 
   return {
     message: "OTP sent successfully",
+    otp: process.env.NODE_ENV !== "production" ? otp : undefined,
   };
 }
 
@@ -142,55 +129,16 @@ async function verifyOtp(
     email: normalizedEmail,
   });
 
-  // ----------------------------------------------------
-  // SIGN IN
-  // Existing account is required
-  // ----------------------------------------------------
-
-  if (mode === "signin" && !user) {
-    const err = new Error(
-      "Account not found. Please sign up first."
-    );
-
-    err.status = 404;
-    throw err;
-  }
-
-  // ----------------------------------------------------
-  // SIGN UP
-  // Existing account cannot sign up again
-  // ----------------------------------------------------
-
-  if (mode === "signup" && user) {
-    const err = new Error(
-      "An account already exists with this email. Please sign in."
-    );
-
-    err.status = 409;
-    throw err;
-  }
-
-  // ----------------------------------------------------
-  // SIGN UP + NEW USER
-  // ----------------------------------------------------
-
-  if (mode === "signup" && !user) {
-    const trimmedName = name.trim();
-
-    if (!trimmedName) {
-      const err = new Error(
-        "Name is required for signup."
-      );
-
-      err.status = 422;
-      throw err;
-    }
-
+  if (!user) {
+    const trimmedName = name?.trim() || normalizedEmail.split("@")[0];
     user = await User.create({
       name: trimmedName,
       email: normalizedEmail,
       authProviders: ["email"],
     });
+  } else if (name?.trim() && (!user.name || user.name === normalizedEmail.split("@")[0])) {
+    user.name = name.trim();
+    await user.save();
   }
 
   // ----------------------------------------------------

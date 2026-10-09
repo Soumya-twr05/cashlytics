@@ -73,7 +73,10 @@ dist/
 *.pth
 *.pt
 *.onnx
-models/
+/models/
+ml/models/
+!backend2/src/models/
+!frontend/src/lib/
 data/
 datasets/
 

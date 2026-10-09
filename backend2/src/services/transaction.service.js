@@ -9,9 +9,13 @@ function initialsFor(merchant) {
 }
 
 function parsePagination(query = {}) {
-  const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
-  const skip = (page - 1) * limit;
+  let page = Math.max(1, Number(query.page) || 1);
+  let skip = (page - 1) * limit;
+  if (query.skip !== undefined && !query.page) {
+    skip = Math.max(0, Number(query.skip) || 0);
+    page = Math.floor(skip / limit) + 1;
+  }
   return { page, limit, skip };
 }
 
@@ -64,9 +68,25 @@ async function listTransactions(userId, query) {
   const { page, limit, skip } = parsePagination(query);
   const filter = { user: userId };
   if (query.category && query.category !== "All") filter.category = query.category;
+  if (query.type) filter.type = query.type;
   if (query.search) filter.merchant = new RegExp(query.search, "i");
   if (query.verified === "true") filter.verified = true;
   if (query.verified === "false") filter.verified = false;
+
+  if (query.startDate || query.endDate) {
+    filter.occurredAt = {};
+    if (query.startDate) {
+      const s = new Date(query.startDate);
+      if (!isNaN(s.getTime())) filter.occurredAt.$gte = s;
+    }
+    if (query.endDate) {
+      const e = new Date(query.endDate);
+      if (!isNaN(e.getTime())) filter.occurredAt.$lte = e;
+    }
+    if (Object.keys(filter.occurredAt).length === 0) {
+      delete filter.occurredAt;
+    }
+  }
 
   const [items, total] = await Promise.all([
     Transaction.find(filter).sort({ occurredAt: -1 }).skip(skip).limit(limit),

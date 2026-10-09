@@ -21,5 +21,6 @@ const askSchema = Joi.object({
 router.use(authMiddleware);
 router.post("/ask", validate(askSchema), ctrl.ask);
 router.get("/history", ctrl.history);
+router.delete("/history", ctrl.clearHistory);
 
 module.exports = router;

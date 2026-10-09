@@ -2,6 +2,7 @@ const Joi = require("joi");
 
 const otpRequestSchema = Joi.object({
   email: Joi.string().email().required(),
+  mode: Joi.string().valid("signin", "signup").optional().default("signin"),
 });
 
 const otpVerifySchema = Joi.object({
@@ -20,7 +21,8 @@ const otpVerifySchema = Joi.object({
 
   mode: Joi.string()
     .valid("signin", "signup")
-    .required(),
+    .optional()
+    .default("signin"),
 });
 
 module.exports = {
