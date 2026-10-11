@@ -4,6 +4,7 @@ import {
   updateProfilePreferences,
   updateProfileAvatar,
 } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
 
 const SECTIONS = [
   { id: "account", label: "Account" },
@@ -124,6 +125,7 @@ interface ProfileProps {
 }
 
 export default function Profile({ onUpdateProfile }: ProfileProps) {
+  const { updateUser } = useAuth();
   const [section, setSection] = useState("account");
 
   const [loading, setLoading] = useState(true);
@@ -158,6 +160,9 @@ export default function Profile({ onUpdateProfile }: ProfileProps) {
       }
 
       setUser(profileData.user || null);
+      if (profileData.user && updateUser) {
+        updateUser(profileData.user);
+      }
       setFinancialProfile(profileData.profile || null);
 
       setPrefs({
@@ -259,6 +264,9 @@ export default function Profile({ onUpdateProfile }: ProfileProps) {
           ...current,
           ...updatedUser,
         }));
+        if (updateUser) {
+          updateUser(updatedUser);
+        }
       }
     } catch (err: any) {
       console.error("Failed to upload avatar:", err);

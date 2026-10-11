@@ -20,22 +20,42 @@ const CATEGORY_MAP: Record<string, string> = {
 
   Food: "Food & Dining",
   "Food & Dining": "Food & Dining",
+  "Food and Dining": "Food & Dining",
 
   Grocery: "Groceries",
   Groceries: "Groceries",
 
   Medical: "Healthcare",
   Healthcare: "Healthcare",
+  Health: "Healthcare",
+  "Healthcare & Medical": "Healthcare",
+  "Healthcare and Medical": "Healthcare",
 
   Entertainment: "Entertainment",
+  "Entertainment & Recreation": "Entertainment",
+  "Entertainment and Recreation": "Entertainment",
+
   Shopping: "Shopping",
+  "Shopping & Retail": "Shopping",
+  "Shopping and Retail": "Shopping",
+
   Bills: "Bills",
+  "Bills & Utilities": "Bills",
+  "Bills and Utilities": "Bills",
+  Utilities: "Bills",
+  "Rent & Housing": "Bills",
+  "Rent and Housing": "Bills",
+  Rent: "Bills",
+  "Government & Legal": "Bills",
+  "Government and Legal": "Bills",
+
   Education: "Education",
+
   Investment: "Investment",
   Financial: "Investment",
+  "Financial Services": "Investment",
 
   Income: "Income",
-
   Transfer: "Transfer",
   Lifestyle: "Lifestyle",
   Electronics: "Electronics",
@@ -47,9 +67,21 @@ const CATEGORY_MAP: Record<string, string> = {
  * used by the Cashlytics backend.
  */
 function normalizeCategory(category: string): string {
+  if (!category) return "Other";
   const cleanedCategory = category.trim();
 
-  return CATEGORY_MAP[cleanedCategory] || "Other";
+  if (CATEGORY_MAP[cleanedCategory]) {
+    return CATEGORY_MAP[cleanedCategory];
+  }
+
+  const lower = cleanedCategory.toLowerCase();
+  for (const [key, val] of Object.entries(CATEGORY_MAP)) {
+    if (key.toLowerCase() === lower) {
+      return val;
+    }
+  }
+
+  return "Other";
 }
 
 export default function AddTransaction({

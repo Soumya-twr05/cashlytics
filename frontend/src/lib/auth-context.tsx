@@ -5,6 +5,7 @@ interface User {
   id: string;
   email: string;
   name?: string;
+  avatar?: string;
   onboardingCompleted?: boolean;
 }
 
@@ -17,6 +18,7 @@ interface AuthContextType {
   login: (token: string, user: User, onboardingCompleted?: boolean) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (updatedFields: Partial<User>) => void;
   markOnboardingComplete: () => void;
 }
 
@@ -91,6 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUser = (updatedFields: Partial<User>) => {
+    setUser((prev) => (prev ? { ...prev, ...updatedFields } : null));
+  };
+
   const markOnboardingComplete = () => {
     setOnboardingCompleted(true);
     localStorage.setItem("cashlytics_onboarding_completed", "true");
@@ -107,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         refreshUser,
+        updateUser,
         markOnboardingComplete,
       }}
     >

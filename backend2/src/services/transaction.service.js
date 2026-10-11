@@ -2,6 +2,7 @@ const Transaction = require("../models/Transaction");
 const { findDuplicate } = require("./duplicate.service");
 const { categorizeTransaction } = require("./categorization.service");
 const { normalizeMerchant } = require("../utils/fingerprint");
+const { normalizeCategory } = require("../utils/constants");
 
 function initialsFor(merchant) {
   const parts = String(merchant).trim().split(/\s+/);
@@ -41,7 +42,7 @@ async function createTransaction(userId, input) {
   }
 
   const classified = input.category
-    ? { category: input.category, confidence: input.confidence ?? 1.0, source: "manual" }
+    ? { category: normalizeCategory(input.category), confidence: input.confidence ?? 1.0, source: "manual" }
     : await categorizeTransaction(userId, input.merchant, input.amount || 0);
 
   const doc = await Transaction.create({
@@ -50,7 +51,7 @@ async function createTransaction(userId, input) {
     initials: input.initials || initialsFor(input.merchant),
     amount: input.amount,
     type: input.type || "debit",
-    category: classified.category,
+    category: normalizeCategory(classified.category),
     method: input.method || "UPI",
     source: input.source || "Manual",
     confidence: classified.confidence,
@@ -100,7 +101,11 @@ async function getTransaction(userId, id) {
 }
 
 async function updateTransaction(userId, id, patch) {
-  return Transaction.findOneAndUpdate({ _id: id, user: userId }, patch, { new: true });
+  const updateData = { ...patch };
+  if (updateData.category) {
+    updateData.category = normalizeCategory(updateData.category);
+  }
+  return Transaction.findOneAndUpdate({ _id: id, user: userId }, updateData, { new: true });
 }
 
 async function deleteTransaction(userId, id) {

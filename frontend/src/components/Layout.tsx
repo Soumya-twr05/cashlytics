@@ -171,6 +171,7 @@ export default function Layout({
   const displayName = user?.name?.trim() || user?.email?.split("@")[0] || "Account";
   const displayEmail = user?.email || "Cashlytics user";
   const userInitial = (displayName[0] || "U").toUpperCase();
+  const userAvatar = user?.avatar;
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -470,83 +471,7 @@ export default function Layout({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <button
-              className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium"
-              style={{
-                border: "1px solid rgba(255,255,255,0.18)",
-                color: "rgba(200,221,210,0.85)",
-                background: "transparent",
-                fontSize: "13px",
-              }}
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.61" />
-                <path d="M21 3v4h-4" />
-              </svg>
-              Sync feeds
-            </button>
-
-            <button
-              className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium"
-              style={{
-                border: "1px solid rgba(255,255,255,0.18)",
-                color: "rgba(200,221,210,0.85)",
-                background: "transparent",
-                fontSize: "13px",
-              }}
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-              </svg>
-              Run simulation
-            </button>
-
-            <button
-              className="relative flex items-center justify-center rounded-md"
-              style={{
-                width: "34px",
-                height: "34px",
-                border: "1px solid rgba(255,255,255,0.18)",
-                color: "rgba(200,221,210,0.7)",
-              }}
-            >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
-              </svg>
-
-              <span
-                className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-                style={{ background: "#f87171" }}
-              />
-            </button>
-
+         
             {/* PROFILE / ACCOUNT MENU */}
             <div className="relative" ref={profileMenuRef}>
               <button
@@ -555,7 +480,7 @@ export default function Layout({
                 aria-label="Open account menu"
                 aria-haspopup="menu"
                 aria-expanded={profileOpen}
-                className="flex items-center justify-center rounded-md text-xs font-bold transition-all duration-150"
+                className="flex items-center justify-center rounded-md text-xs font-bold transition-all duration-150 overflow-hidden"
                 style={{
                   width: "36px",
                   height: "36px",
@@ -564,9 +489,18 @@ export default function Layout({
                     : "rgba(13,158,126,0.25)",
                   color: "#0d9e7e",
                   border: "1px solid rgba(13,158,126,0.4)",
+                  padding: 0,
                 }}
               >
-                {userInitial}
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt={displayName}
+                    className="w-full h-full object-cover rounded-md"
+                  />
+                ) : (
+                  userInitial
+                )}
               </button>
 
               {profileOpen && (
@@ -590,7 +524,7 @@ export default function Layout({
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="flex items-center justify-center rounded-full shrink-0 font-bold text-sm"
+                        className="flex items-center justify-center rounded-full shrink-0 font-bold text-sm overflow-hidden"
                         style={{
                           width: "38px",
                           height: "38px",
@@ -601,7 +535,15 @@ export default function Layout({
                             "1px solid rgba(13,158,126,0.35)",
                         }}
                       >
-                        {userInitial}
+                        {userAvatar ? (
+                          <img
+                            src={userAvatar}
+                            alt={displayName}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          userInitial
+                        )}
                       </div>
 
                       <div className="min-w-0">

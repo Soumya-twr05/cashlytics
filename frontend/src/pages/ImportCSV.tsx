@@ -38,23 +38,40 @@ const CATEGORY_MAP: Record<string, string> = {
 
   Food: "Food & Dining",
   "Food & Dining": "Food & Dining",
+  "Food and Dining": "Food & Dining",
 
   Grocery: "Groceries",
   Groceries: "Groceries",
 
   Medical: "Healthcare",
   Healthcare: "Healthcare",
+  Health: "Healthcare",
+  "Healthcare & Medical": "Healthcare",
+  "Healthcare and Medical": "Healthcare",
 
   Financial: "Investment",
   Investment: "Investment",
+  "Financial Services": "Investment",
 
   Electronics: "Electronics",
 
   Entertainment: "Entertainment",
+  "Entertainment & Recreation": "Entertainment",
+  "Entertainment and Recreation": "Entertainment",
 
   Shopping: "Shopping",
+  "Shopping & Retail": "Shopping",
+  "Shopping and Retail": "Shopping",
 
   Bills: "Bills",
+  "Bills & Utilities": "Bills",
+  "Bills and Utilities": "Bills",
+  Utilities: "Bills",
+  "Rent & Housing": "Bills",
+  "Rent and Housing": "Bills",
+  Rent: "Bills",
+  "Government & Legal": "Bills",
+  "Government and Legal": "Bills",
 
   Education: "Education",
 
@@ -68,9 +85,21 @@ const CATEGORY_MAP: Record<string, string> = {
 };
 
 function normalizeCategory(category: string): string {
+  if (!category) return "Other";
   const cleaned = category.trim();
 
-  return CATEGORY_MAP[cleaned] || "Other";
+  if (CATEGORY_MAP[cleaned]) {
+    return CATEGORY_MAP[cleaned];
+  }
+
+  const lower = cleaned.toLowerCase();
+  for (const [key, val] of Object.entries(CATEGORY_MAP)) {
+    if (key.toLowerCase() === lower) {
+      return val;
+    }
+  }
+
+  return "Other";
 }
 
 

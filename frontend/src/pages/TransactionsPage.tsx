@@ -289,11 +289,15 @@ interface Transaction {
 const FILTER_TABS = [
   "All",
   "Food",
+  "Groceries",
   "Transport",
   "Shopping",
+  "Electronics",
   "Bills",
   "Entertainment",
   "Healthcare",
+  "Education",
+  "Investment",
   "Lifestyle",
   "Other",
 ];
@@ -371,31 +375,85 @@ function normalizeCategory(category: string): string {
     return "Food";
   }
 
+  if (value === "groceries" || value === "grocery") {
+    return "Groceries";
+  }
+
   if (value === "transportation" || value === "transport") {
     return "Transport";
   }
 
-  if (value === "entertainment") {
-    return "Entertainment";
-  }
-
-  if (value === "healthcare" || value === "health") {
-    return "Healthcare";
-  }
-
-  if (value === "shopping") {
+  if (
+    value === "shopping" ||
+    value === "shopping & retail" ||
+    value === "shopping and retail"
+  ) {
     return "Shopping";
   }
 
-  if (value === "bills" || value === "utilities") {
+  if (value === "electronics") {
+    return "Electronics";
+  }
+
+  if (
+    value === "entertainment" ||
+    value === "entertainment & recreation" ||
+    value === "entertainment and recreation"
+  ) {
+    return "Entertainment";
+  }
+
+  if (
+    value === "healthcare" ||
+    value === "health" ||
+    value === "healthcare & medical" ||
+    value === "healthcare and medical" ||
+    value === "medical"
+  ) {
+    return "Healthcare";
+  }
+
+  if (
+    value === "bills" ||
+    value === "utilities" ||
+    value === "bills & utilities" ||
+    value === "bills and utilities" ||
+    value === "rent & housing" ||
+    value === "rent and housing" ||
+    value === "rent" ||
+    value === "housing" ||
+    value === "government & legal" ||
+    value === "government and legal"
+  ) {
     return "Bills";
+  }
+
+  if (value === "education") {
+    return "Education";
+  }
+
+  if (
+    value === "investment" ||
+    value === "financial services" ||
+    value === "financial and investment" ||
+    value === "financial"
+  ) {
+    return "Investment";
   }
 
   if (value === "lifestyle") {
     return "Lifestyle";
   }
 
-  return category;
+  if (value === "income") {
+    return "Income";
+  }
+
+  if (value === "transfer") {
+    return "Transfer";
+  }
+
+  return "Other";
 }
 
 export default function TransactionsPage() {

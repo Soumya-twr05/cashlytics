@@ -74,7 +74,15 @@ function MiniBarChart({ data, title }: { data: ChartData["data"]; title: string 
   );
 }
 
-function MessageBubble({ message, userInitial }: { message: Message; userInitial: string }) {
+function MessageBubble({
+  message,
+  userInitial,
+  userAvatar,
+}: {
+  message: Message;
+  userInitial: string;
+  userAvatar?: string;
+}) {
   const isUser = message.role === "user";
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -130,7 +138,7 @@ function MessageBubble({ message, userInitial }: { message: Message; userInitial
       </div>
       {isUser && (
         <div
-          className="flex items-center justify-center rounded-full shrink-0 self-start mt-1 text-xs font-bold"
+          className="flex items-center justify-center rounded-full shrink-0 self-start mt-1 text-xs font-bold overflow-hidden"
           style={{
             width: "28px",
             height: "28px",
@@ -139,7 +147,15 @@ function MessageBubble({ message, userInitial }: { message: Message; userInitial
             border: "1px solid rgba(16,185,129,0.3)",
           }}
         >
-          {userInitial}
+          {userAvatar ? (
+            <img
+              src={userAvatar}
+              alt="User"
+              className="w-full h-full object-cover rounded-full"
+            />
+          ) : (
+            userInitial
+          )}
         </div>
       )}
     </div>
@@ -150,6 +166,7 @@ export default function AIAssistant() {
   const { user } = useAuth();
   const userName = user?.name?.trim() || user?.email?.split("@")[0] || "there";
   const userInitial = (userName[0] || "U").toUpperCase();
+  const userAvatar = user?.avatar;
   const userEmail = user?.email || "User";
 
   const storageKey = `cashlytics_chat_${user?.id || "guest"}`;
@@ -407,7 +424,7 @@ export default function AIAssistant() {
       {/* Header bar with controls */}
       <div
         className="px-6 py-3 border-b flex items-center justify-between gap-4"
-        style={{ borderColor: "var(--border)", background: "#0a0d12" }}
+        style={{ borderColor: "var(--border)", background: "#d5f0e6ff" }}
       >
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: "var(--primary)" }} />
@@ -417,7 +434,7 @@ export default function AIAssistant() {
           <span
             className="text-xs px-2 py-0.5 rounded-full"
             style={{
-              background: "rgba(16,185,129,0.1)",
+              background: "rgba(5, 60, 15, 0.1)",
               color: "var(--primary)",
               fontSize: "10px",
             }}
@@ -434,7 +451,7 @@ export default function AIAssistant() {
             title="Download text note of financial suggestions & conversation"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium transition-colors cursor-pointer"
             style={{
-              background: "rgba(255,255,255,0.06)",
+              background: "rgba(13, 14, 13, 0.06)",
               color: "var(--foreground)",
               border: "1px solid var(--border)",
             }}
@@ -554,7 +571,12 @@ export default function AIAssistant() {
         </div>
 
         {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} userInitial={userInitial} />
+          <MessageBubble
+            key={m.id}
+            message={m}
+            userInitial={userInitial}
+            userAvatar={userAvatar}
+          />
         ))}
         {loading && (
           <div className="flex gap-3">
