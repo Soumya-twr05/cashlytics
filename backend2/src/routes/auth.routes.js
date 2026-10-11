@@ -18,9 +18,9 @@ function validate(schema) {
 router.post("/otp/request", authLimiter, validate(otpRequestSchema), ctrl.requestOtp);
 router.post("/otp/verify", authLimiter, validate(otpVerifySchema), ctrl.verifyOtp);
 
-// Google OAuth Routes (Stubs)
+// Google OAuth Routes
 router.get("/google", ctrl.googleAuth);
-router.get("/google/callback", ctrl.googleAuth);
+router.get("/google/callback", ctrl.googleAuthCallback);
 
 // Session Routes
 router.get("/me", authMiddleware, ctrl.me);

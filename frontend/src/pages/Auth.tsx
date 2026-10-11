@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { requestOtp, saveToken, verifyOtp } from "../lib/api";
+import { API_BASE_URL, requestOtp, saveToken, verifyOtp } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
 import Logo from "../components/Logo";
 
 interface AuthProps {
@@ -8,12 +9,15 @@ interface AuthProps {
     mode?: "signin" | "signup"
   ) => void;
   onGuestStart: () => void;
+  initialError?: string;
 }
 
 export default function Auth({
   onSignInSuccess,
   onGuestStart,
+  initialError = "",
 }: AuthProps) {
+  const { login } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
 
@@ -22,15 +26,14 @@ export default function Auth({
   const [otp, setOtp] = useState("");
 
   const [otpSent, setOtpSent] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
   const [message, setMessage] = useState("");
 
-  // Google authentication will be connected later.
-  const handleGoogleAuth = async () => {
+  // Initiate Google OAuth 2.0 flow
+  const handleGoogleAuth = () => {
     setError("");
     setMessage("");
-
-    setError("Google authentication is not connected yet.");
+    window.location.href = `${API_BASE_URL}/auth/google`;
   };
 
   // Request OTP
@@ -58,13 +61,13 @@ export default function Auth({
 
       setOtpSent(true);
 
-      const devOtp = (res as any)?.data?.otp;
+      const devOtp = (res as any)?.data?.devOtp || (res as any)?.data?.otp;
       if (devOtp) {
         setOtp(devOtp);
-        setMessage(`OTP sent! Development OTP: ${devOtp} (auto-filled)`);
+        setMessage(`Development OTP: ${devOtp} (auto-filled for local testing)`);
       } else {
         setMessage(
-          "OTP sent successfully. Check your email or backend terminal for OTP."
+          "Verification code sent! Please check your email inbox."
         );
       }
     } catch (err) {
@@ -125,8 +128,14 @@ export default function Auth({
         throw new Error("Authentication token was not returned.");
       }
 
-      // Save JWT token
-      saveToken(response.data.token);
+      const { token, user, onboardingCompleted } = response.data;
+
+      // Establish application authentication state immediately
+      if (user) {
+        login(token, user, onboardingCompleted);
+      } else {
+        saveToken(token);
+      }
 
       setMessage("Authentication successful.");
 

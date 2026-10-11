@@ -1,8 +1,11 @@
 const {
   requestOtp,
   verifyOtp,
+  handleGoogleCallback,
   getUserProfile,
 } = require("../services/auth.service");
+
+const env = require("../config/env");
 
 const {
   success,
@@ -17,7 +20,7 @@ async function requestOtpController(req, res, next) {
     return created(
       res,
       result,
-      "OTP sent"
+      result.message || "OTP sent"
     );
   } catch (err) {
     if (err.status) {
@@ -67,14 +70,15 @@ async function me(req, res, next) {
 
     return success(res, result);
   } catch (err) {
+    if (err.status) {
+      return fail(res, err.message, err.status);
+    }
     return next(err);
   }
 }
 
 async function logout(req, res, next) {
   try {
-    // JWT is stateless, so logout is primarily
-    // handled by removing the token on the client.
     return success(
       res,
       {},
@@ -86,12 +90,51 @@ async function logout(req, res, next) {
 }
 
 async function googleAuth(req, res, next) {
-  // Google OAuth will be implemented separately.
-  return fail(
-    res,
-    "Google Auth not yet implemented",
-    501
-  );
+  try {
+    if (!env.googleClientId || !env.googleClientSecret) {
+      const acceptsJson = req.xhr || req.headers.accept?.includes("application/json");
+      if (acceptsJson) {
+        return fail(res, "Google OAuth is not configured on the server", 503);
+      }
+      return res.redirect(`${env.clientOrigin}/?auth_error=${encodeURIComponent("Google OAuth credentials are not configured on the server")}`);
+    }
+
+    const params = new URLSearchParams({
+      client_id: env.googleClientId,
+      redirect_uri: env.googleCallbackUrl,
+      response_type: "code",
+      scope: "openid email profile",
+      access_type: "offline",
+      prompt: "select_account",
+    });
+
+    return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function googleAuthCallback(req, res, next) {
+  try {
+    if (req.query.error) {
+      return res.redirect(`${env.clientOrigin}/?auth_error=${encodeURIComponent(req.query.error)}`);
+    }
+
+    if (!req.query.code) {
+      return res.redirect(`${env.clientOrigin}/?auth_error=missing_code`);
+    }
+
+    const result = await handleGoogleCallback(req.query.code);
+
+    return res.redirect(
+      `${env.clientOrigin}/?token=${encodeURIComponent(result.token)}&onboardingCompleted=${result.onboardingCompleted ? "true" : "false"}&auth=google`
+    );
+  } catch (err) {
+    console.error("Google OAuth callback error:", err.message);
+    return res.redirect(
+      `${env.clientOrigin}/?auth_error=${encodeURIComponent(err.message || "google_auth_failed")}`
+    );
+  }
 }
 
 module.exports = {
@@ -100,4 +143,5 @@ module.exports = {
   me,
   logout,
   googleAuth,
+  googleAuthCallback,
 };

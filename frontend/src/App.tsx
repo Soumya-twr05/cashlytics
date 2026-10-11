@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
@@ -16,6 +16,7 @@ import AdaptiveLearning from "./pages/AdaptiveLearning";
 import WhatIfSimulator from "./pages/WhatIfSimulator";
 import Profile from "./pages/Profile";
 
+import * as api from "./lib/api";
 import { useAuth } from "./lib/auth-context";
 
 export type Page =
@@ -58,6 +59,8 @@ export default function App() {
    * Used when the user wants to update their profile from the Profile page.
    */
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   const {
     isAuthenticated,
@@ -65,7 +68,44 @@ export default function App() {
     onboardingCompleted,
     markOnboardingComplete,
     logout,
+    login,
   } = useAuth();
+
+  // Listen for OAuth redirects (e.g. Google OAuth redirect ?token=... or ?auth_error=...)
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const tokenParam = searchParams.get("token");
+      const authErrorParam = searchParams.get("auth_error");
+      const onboardingParam = searchParams.get("onboardingCompleted");
+
+      if (tokenParam) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        api.saveToken(tokenParam);
+        api
+          .getAuthMe()
+          .then((res) => {
+            const userData = (res.data as any)?.user;
+            if (userData) {
+              const isCompleted = onboardingParam === "true" || !!userData.onboardingCompleted;
+              login(tokenParam, userData, isCompleted);
+              setView("app");
+              setPage("overview");
+            }
+          })
+          .catch((err) => {
+            setAuthError(err.message || "Failed to load authenticated profile");
+            setView("auth");
+          });
+      } else if (authErrorParam) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setAuthError(authErrorParam);
+        setView("auth");
+      }
+    } catch (e) {
+      console.error("OAuth param handling error:", e);
+    }
+  }, [login]);
 
   // ---------------------------------------------------------
   // Loading
@@ -104,9 +144,9 @@ export default function App() {
   // Authenticated user
   // ---------------------------------------------------------
 
-  if (isAuthenticated) {
-    // Show onboarding if: not yet completed, OR user explicitly requested update
-    if (!onboardingCompleted || showOnboarding) {
+  if (isAuthenticated || isGuest) {
+    // Show onboarding if: authenticated and not yet completed, OR user explicitly requested update
+    if (isAuthenticated && (!onboardingCompleted || showOnboarding)) {
       return (
         <Onboarding
           onComplete={() => {
@@ -178,6 +218,7 @@ export default function App() {
         page={page}
         onNavigate={setPage}
         onSignOut={() => {
+          setIsGuest(false);
           logout();
           setAuthMode(null);
           setView("landing");
@@ -215,6 +256,7 @@ export default function App() {
   if (view === "auth") {
     return (
       <Auth
+        initialError={authError}
         onSignInSuccess={(
           onboardingCompletedFromAuth,
           mode
@@ -222,28 +264,10 @@ export default function App() {
           const currentMode = mode ?? "signin";
           setAuthMode(currentMode);
           setPage("overview");
-
-          if (currentMode === "signup") {
-            /*
-             * New sign-up: always go to onboarding first.
-             * The onboarding screen will be shown because onboardingCompleted
-             * will be false for a brand-new user.
-             */
-            setView("app");
-          } else {
-            /*
-             * Sign-in: go straight to dashboard.
-             * If onboarding was never completed (rare), the authenticated
-             * block above will still show onboarding.
-             */
-            setAuthMode(null);
-            setView("app");
-          }
+          setView("app");
         }}
         onGuestStart={() => {
-          /*
-           * Guest users don't need onboarding.
-           */
+          setIsGuest(true);
           setAuthMode(null);
           setView("app");
           setPage("overview");
@@ -252,5 +276,17 @@ export default function App() {
     );
   }
 
-  return null;
+  // Safe fallback to prevent blank screen
+  return (
+    <Landing
+      onGetStarted={() => {
+        setAuthMode(null);
+        setView("auth");
+      }}
+      onSignIn={() => {
+        setAuthMode("signin");
+        setView("auth");
+      }}
+    />
+  );
 }

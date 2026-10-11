@@ -16,6 +16,13 @@ const env = {
   uploadDir: process.env.UPLOAD_DIR || "uploads",
   maxUploadMb: Number(process.env.MAX_UPLOAD_MB || 8),
   logLevel: process.env.LOG_LEVEL || "info",
+  // Email delivery (Resend)
+  resendApiKey: process.env.RESEND_API_KEY || "",
+  emailFrom: process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL || "Cashlytics <onboarding@resend.dev>",
+  // Google OAuth 2.0
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5001/api/auth/google/callback",
 };
 
 module.exports = env;
