@@ -187,15 +187,21 @@ export default function Auth({
 
   return (
     <div
-      className="h-full flex items-center justify-center overflow-y-auto"
+      className="h-full flex items-center justify-center overflow-y-auto px-4 py-8"
       style={{ background: "var(--background)" }}
     >
-      <div className="w-full max-w-md px-6 py-12">
+      <div
+        className="w-full max-w-md p-8 sm:p-10 rounded-3xl border shadow-xl shadow-black/5"
+        style={{
+          background: "var(--card)",
+          borderColor: "var(--border)",
+        }}
+      >
 
         {/* Logo */}
-        <div className="flex items-center gap-2.5 mb-10 justify-center">
+        <div className="flex items-center gap-2.5 mb-8 justify-center">
           <Logo size={32} rounded="rounded-md" />
-          <span className="font-bold text-sm tracking-tight">
+          <span className="font-bold text-sm tracking-tight font-mono">
             CASHLYTICS
           </span>
         </div>
@@ -203,8 +209,8 @@ export default function Auth({
         {/* Heading */}
         <div className="text-center mb-8">
           <h1
-            className="font-bold text-2xl mb-2"
-            style={{ letterSpacing: "-0.02em" }}
+            className="font-heading font-black text-2xl sm:text-3xl mb-2 text-[#050505]"
+            style={{ letterSpacing: "-0.03em" }}
           >
             {mode === "signin"
               ? "Welcome back"
@@ -369,7 +375,7 @@ export default function Auth({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2.5 rounded-sm border bg-white text-sm focus:outline-none focus:ring-2"
+                  className="w-full px-3.5 py-2.5 rounded-xl border bg-white text-sm focus:outline-none focus:ring-2"
                   style={{
                     borderColor: "var(--border)",
                     color: "var(--foreground)",
@@ -384,10 +390,10 @@ export default function Auth({
               type="button"
               onClick={handleRequestOtp}
               disabled={loading}
-              className="w-full py-3 rounded-sm font-semibold text-sm mb-4 transition-opacity flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-full font-bold text-sm mb-4 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#C8FF45]/20 active:scale-[0.98]"
               style={{
-                background: "var(--primary)",
-                color: "var(--primary-foreground)",
+                background: "var(--accent)",
+                color: "var(--accent-foreground)",
                 opacity: loading ? 0.7 : 1,
               }}
             >
@@ -452,10 +458,10 @@ export default function Auth({
               type="button"
               onClick={handleVerifyOtp}
               disabled={loading}
-              className="w-full py-3 rounded-sm font-semibold text-sm mb-3 transition-opacity flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-full font-bold text-sm mb-3 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#C8FF45]/20 active:scale-[0.98]"
               style={{
-                background: "var(--primary)",
-                color: "var(--primary-foreground)",
+                background: "var(--accent)",
+                color: "var(--accent-foreground)",
                 opacity: loading ? 0.7 : 1,
               }}
             >
@@ -476,7 +482,7 @@ export default function Auth({
               type="button"
               onClick={handleBackToEmail}
               disabled={loading}
-              className="w-full py-2.5 rounded-sm font-medium text-sm border transition-colors"
+              className="w-full py-2.5 rounded-full font-semibold text-sm border transition-all cursor-pointer hover:bg-black/5 active:scale-[0.98]"
               style={{
                 borderColor: "var(--border)",
                 background: "var(--card)",
@@ -494,27 +500,15 @@ export default function Auth({
             type="button"
             onClick={onGuestStart}
             disabled={loading}
-            className="w-full py-2.5 rounded-sm font-medium text-sm border transition-colors"
+            className="w-full py-2.5 rounded-full font-medium text-sm border transition-all cursor-pointer hover:bg-black/5 active:scale-[0.98]"
             style={{
               borderColor: "var(--border)",
-              background: "var(--card)",
-              color: "var(--foreground)",
+              background: "transparent",
+              color: "var(--muted-foreground)",
               opacity: loading ? 0.6 : 1,
             }}
-            onMouseEnter={(e) => {
-              if (!loading) {
-                e.currentTarget.style.background =
-                  "var(--secondary)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!loading) {
-                e.currentTarget.style.background =
-                  "var(--card)";
-              }
-            }}
           >
-            Continue as guest
+            Continue as guest →
           </button>
         )}
 

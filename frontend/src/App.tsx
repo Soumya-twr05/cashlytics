@@ -15,6 +15,7 @@ import AIAssistant from "./pages/AIAssistant";
 import AdaptiveLearning from "./pages/AdaptiveLearning";
 import WhatIfSimulator from "./pages/WhatIfSimulator";
 import Profile from "./pages/Profile";
+import AdminDashboard from "./pages/AdminDashboard";
 
 import * as api from "./lib/api";
 import { useAuth } from "./lib/auth-context";
@@ -31,7 +32,8 @@ export type Page =
   | "ai-assistant"
   | "learning"
   | "simulator"
-  | "profile";
+  | "profile"
+  | "admin";
 
 export type AppView =
   | "landing"
@@ -207,6 +209,9 @@ export default function App() {
 
         case "bills":
           return <Budgets />;
+
+        case "admin":
+          return <AdminDashboard onNavigate={setPage} />;
 
         default:
           return <Dashboard onNavigate={setPage} />;

@@ -13,6 +13,11 @@ function hashOTP(otp) {
   return crypto.createHash("sha256").update(otp).digest("hex");
 }
 
+function isAdminEmail(email) {
+  if (!env.adminEmail || !email) return false;
+  return email.toLowerCase().trim() === env.adminEmail.toLowerCase().trim();
+}
+
 async function requestOtp(email, mode = "signin") {
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -133,16 +138,29 @@ async function verifyOtp(email, otp, name = "", mode = "signin") {
     email: normalizedEmail,
   });
 
+  const isAdmin = isAdminEmail(normalizedEmail);
+
   if (!user) {
     const trimmedName = name?.trim() || normalizedEmail.split("@")[0];
     user = await User.create({
       name: trimmedName,
       email: normalizedEmail,
       authProviders: ["email"],
+      role: isAdmin ? "admin" : "user",
     });
-  } else if (name?.trim() && (!user.name || user.name === normalizedEmail.split("@")[0])) {
-    user.name = name.trim();
-    await user.save();
+  } else {
+    let modified = false;
+    if (name?.trim() && (!user.name || user.name === normalizedEmail.split("@")[0])) {
+      user.name = name.trim();
+      modified = true;
+    }
+    if (isAdmin && user.role !== "admin") {
+      user.role = "admin";
+      modified = true;
+    }
+    if (modified) {
+      await user.save();
+    }
   }
 
   if (!user) {
@@ -225,6 +243,8 @@ async function handleGoogleCallback(code) {
     $or: [{ googleId }, { email: normalizedEmail }],
   });
 
+  const isGoogleAdmin = isAdminEmail(normalizedEmail);
+
   if (!user) {
     user = await User.create({
       name: profile.name || normalizedEmail.split("@")[0],
@@ -232,10 +252,15 @@ async function handleGoogleCallback(code) {
       googleId,
       avatar: profile.picture || "",
       authProviders: ["google"],
+      role: isGoogleAdmin ? "admin" : "user",
     });
   } else {
     // Link google provider if needed
     let modified = false;
+    if (isGoogleAdmin && user.role !== "admin") {
+      user.role = "admin";
+      modified = true;
+    }
     if (!user.googleId) {
       user.googleId = googleId;
       modified = true;
@@ -282,6 +307,7 @@ function publicUser(user) {
     email: user.email,
     avatar: user.avatar,
     plan: user.plan,
+    role: user.role || "user",
     preferences: user.preferences,
     onboardingCompleted: user.onboardingCompleted,
   };

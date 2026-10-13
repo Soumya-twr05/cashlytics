@@ -1,0 +1,63 @@
+/* ==========================================================================
+   TYPOGRAPHY (typography.css)
+   Font utility classes, heading styles, and typographic tokens
+   ========================================================================== */
+:root {
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+  --font-heading: var(--font-manrope);
+}
+
+/* --- Font Family Utilities --- */
+.font-heading {
+  font-family: var(--font-manrope);
+}
+
+.font-mono {
+  font-family: var(--font-jetbrains);
+}
+
+.font-sans {
+  font-family: var(--font-inter);
+}
+
+/* --- Heading Hierarchy --- */
+h1, h2, h3, .heading-display {
+  font-family: var(--font-manrope);
+  letter-spacing: -0.03em;
+}
+
+/* --- Financial & Mathematical Typography --- */
+.tabular-nums,
+.currency-num {
+  font-family: var(--font-jetbrains);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.01em;
+}
+
+/* --- Editorial Kickers / Section Tags --- */
+.kicker {
+  font-family: var(--font-jetbrains);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* --- Base Scaling --- */
+html {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    font-size: 18px;
+  }
+}

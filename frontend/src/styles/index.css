@@ -1,0 +1,9 @@
+/* ==========================================================================
+   STYLES BARREL (styles/index.css)
+   Aggregates all modular style layers
+   ========================================================================== */
+@import './fonts.css';
+@import './colors.css';
+@import './typography.css';
+@import './base.css';
+@import './animations.css';

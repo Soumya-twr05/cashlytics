@@ -601,22 +601,22 @@ interface DashboardCategory {
 const TIME_RANGES = ["7D", "30D", "3M", "1Y"];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Food: "#f59e0b",
-  "Food & Dining": "#f59e0b",
-  Transport: "#06b6d4",
-  Transportation: "#06b6d4",
-  Shopping: "#f87171",
-  Bills: "#818cf8",
-  Entertainment: "#a78bfa",
-  Healthcare: "#34d399",
-  Lifestyle: "#0d9e7e",
-  Utilities: "#06b6d4",
-  Education: "#8b5cf6",
-  Financial: "#14b8a6",
-  Groceries: "#84cc16",
-  Rent: "#6366f1",
-  Income: "#22c55e",
-  Other: "#6b7280",
+  Food: "#D97706",
+  "Food & Dining": "#D97706",
+  Transport: "#0284C7",
+  Transportation: "#0284C7",
+  Shopping: "#E11D48",
+  Bills: "#4F46E5",
+  Entertainment: "#7C3AED",
+  Healthcare: "#059669",
+  Lifestyle: "#15803D",
+  Utilities: "#0891B2",
+  Education: "#8B5CF6",
+  Financial: "#0D9488",
+  Groceries: "#65A30D",
+  Rent: "#4F46E5",
+  Income: "#15803D",
+  Other: "#71717A",
 };
 
 function HealthGauge({ score }: { score: number }) {
@@ -655,7 +655,7 @@ function HealthGauge({ score }: { score: number }) {
           cy={cy}
           r={r}
           fill="none"
-          stroke="#0d9e7e"
+          stroke="#C8FF45"
           strokeWidth="8"
           strokeDasharray={`${filled} ${circ - filled}`}
           strokeLinecap="round"
@@ -675,9 +675,9 @@ function HealthGauge({ score }: { score: number }) {
         </span>
 
         <span
-          className="text-xs mt-0.5"
+          className="text-xs mt-0.5 font-mono"
           style={{
-            color: "rgba(200,221,210,0.6)",
+            color: "rgba(164,164,156,0.7)",
             fontSize: "10px",
           }}
         >
@@ -695,16 +695,17 @@ function ChartTooltip({ active, payload, label }: any) {
 
   return (
     <div
-      className="px-3 py-2 rounded-md shadow-lg text-xs"
+      className="px-3.5 py-2.5 rounded-xl shadow-2xl text-xs"
       style={{
-        background: "#1b3d2b",
-        border: "1px solid rgba(255,255,255,0.1)",
+        background: "#0D0E0D",
+        border: "1px solid rgba(255,255,255,0.14)",
         fontFamily: "var(--font-jetbrains)",
+        boxShadow: "0 14px 35px rgba(0,0,0,0.5)",
       }}
     >
       <div
-        className="mb-1 text-xs font-semibold"
-        style={{ color: "rgba(200,221,210,0.85)" }}
+        className="mb-1 text-xs font-semibold font-mono"
+        style={{ color: "#C8FF45" }}
       >
         {label}
       </div>
@@ -1625,7 +1626,7 @@ export default function Dashboard({
                 <span>Expenses</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#0d9e7e" }} />
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#15803D" }} />
                 <span>Savings</span>
               </div>
             </div>
@@ -1693,7 +1694,7 @@ export default function Dashboard({
                     type="monotone"
                     dataKey="savings"
                     name="Savings"
-                    stroke="#0d9e7e"
+                    stroke="#15803D"
                     strokeWidth={2}
                     dot={false}
                   />

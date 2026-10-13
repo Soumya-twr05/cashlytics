@@ -684,3 +684,123 @@ export async function checkMLHealth() {
     `${ML_BASE_URL}/health`
   ).then((response) => response.json());
 }
+
+// ============================================================
+// ADMIN APIS
+// ============================================================
+
+export interface AdminOverviewData {
+  totalUsers: number;
+  activeUsers: number;
+  totalTransactions: number;
+  totalAssistantRequests: number;
+  activePeriodDays: number;
+}
+
+export interface AdminUserData {
+  id: string;
+  name: string;
+  email: string;
+  role: "user" | "admin";
+  authProviders: string[];
+  plan: string;
+  onboardingCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUserData[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminAnalyticsData {
+  categoryDistribution: Array<{
+    category: string;
+    count: number;
+    percentage: number;
+  }>;
+  featureUsage: {
+    transactionsCount: number;
+    budgetsCount: number;
+    goalsCount: number;
+    assistantMessagesCount: number;
+    smartCaptureCount: number;
+  };
+}
+
+export interface AdminAiMlData {
+  assistant: {
+    totalReplies: number;
+    providerUsage: Array<{ provider: string; count: number }>;
+    fallbackCount: number;
+    fallbackRate: number;
+  };
+  categorization: {
+    totalCategorized: number;
+    averageConfidencePercent: number | null;
+    bySource: Array<{ source: string; count: number }>;
+  };
+  unavailableMetrics: Array<{
+    metric: string;
+    reason: string;
+  }>;
+}
+
+export interface AdminHealthData {
+  backend: {
+    status: string;
+    uptimeSeconds: number;
+    memoryHeapMb: number;
+    nodeVersion: string;
+    timestamp: string;
+  };
+  database: {
+    status: string;
+    connectionState: number;
+  };
+  mlService: {
+    status: string;
+    latencyMs: number | null;
+    url: string;
+    details?: any;
+  };
+}
+
+export async function getAdminOverview() {
+  return request<AdminOverviewData>("/admin/overview", { method: "GET" });
+}
+
+export async function getAdminUsers(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+}) {
+  const query = new URLSearchParams();
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.limit) query.append("limit", String(params.limit));
+  if (params?.search) query.append("search", params.search);
+  if (params?.role) query.append("role", params.role);
+  const qStr = query.toString();
+  return request<AdminUsersResponse>(`/admin/users${qStr ? `?${qStr}` : ""}`, {
+    method: "GET",
+  });
+}
+
+export async function getAdminAnalytics() {
+  return request<AdminAnalyticsData>("/admin/analytics", { method: "GET" });
+}
+
+export async function getAdminAiMl() {
+  return request<AdminAiMlData>("/admin/ai-ml", { method: "GET" });
+}
+
+export async function getAdminHealth() {
+  return request<AdminHealthData>("/admin/health", { method: "GET" });
+}

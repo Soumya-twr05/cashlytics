@@ -1,0 +1,143 @@
+/* ==========================================================================
+   ANIMATIONS & MICRO-INTERACTIONS (animations.css)
+   Transitions, micro-interactions, accessibility preferences, and nav states
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   1. GLOBAL INTERACTIVE TRANSITIONS
+   -------------------------------------------------------------------------- */
+button, a, input, select, textarea {
+  transition-property: color, background-color, border-color, transform, box-shadow, opacity;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-duration: 0.18s;
+}
+
+button:active:not(:disabled),
+a:active {
+  transform: scale(0.98);
+}
+
+/* --------------------------------------------------------------------------
+   2. INTERACTIVE CARDS & PANELS
+   -------------------------------------------------------------------------- */
+.card-interactive {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(5, 5, 5, 0.08), 0 4px 10px -2px rgba(5, 5, 5, 0.04);
+  border-color: rgba(5, 5, 5, 0.16);
+}
+
+/* --------------------------------------------------------------------------
+   3. NAVIGATION ITEM STATES
+   -------------------------------------------------------------------------- */
+.nav-item {
+  position: relative;
+  background: transparent;
+  color: var(--sidebar-foreground) !important;
+  font-weight: 500;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.nav-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: transparent;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.nav-item:hover:not(.nav-item-active) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF !important;
+  transform: translateX(3px);
+}
+
+.nav-item:hover:not(.nav-item-active)::before {
+  background: var(--accent);
+  transform: scaleY(1);
+}
+
+.nav-item:hover:not(.nav-item-active) .nav-item-icon {
+  color: var(--accent) !important;
+}
+
+.nav-item-active {
+  background: var(--sidebar-active) !important;
+  color: var(--sidebar-active-foreground) !important;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(200, 255, 69, 0.22);
+}
+
+.nav-item-active .nav-item-icon {
+  color: var(--sidebar-active-foreground) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. KINETIC ACCENT BUTTONS & TAGS (Volt Aesthetic)
+   -------------------------------------------------------------------------- */
+.btn-volt {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  border-radius: 9999px;
+  padding: 0.625rem 1.25rem;
+  box-shadow: 0 4px 14px rgba(200, 255, 69, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.btn-volt:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(200, 255, 69, 0.32);
+}
+
+.btn-volt:active {
+  transform: scale(0.97);
+}
+
+/* --------------------------------------------------------------------------
+   5. LIVE SYSTEM PULSE INDICATOR
+   -------------------------------------------------------------------------- */
+@keyframes live-pulse-anim {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(200, 255, 69, 0.6);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.92);
+    box-shadow: 0 0 0 4px rgba(200, 255, 69, 0);
+  }
+}
+
+.live-pulse {
+  animation: live-pulse-anim 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Focus Rings */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String },
     onboardingCompleted: { type: Boolean, default: false },
     plan: { type: String, default: "Free" },
+    role: { type: String, enum: ["user", "admin"], default: "user", index: true },
     preferences: {
       emailReports: { type: Boolean, default: true },
       anomalyAlerts: { type: Boolean, default: true },

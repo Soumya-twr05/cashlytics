@@ -16,6 +16,16 @@ const env = {
   uploadDir: process.env.UPLOAD_DIR || "uploads",
   maxUploadMb: Number(process.env.MAX_UPLOAD_MB || 8),
   logLevel: process.env.LOG_LEVEL || "info",
+  // Email delivery (SMTP)
+  smtpHost: process.env.SMTP_HOST || "",
+  smtpPort: Number(process.env.SMTP_PORT || 465),
+  smtpUser: process.env.SMTP_USER || "",
+  smtpPass: process.env.SMTP_PASS || "",
+  smtpSecure:
+    process.env.SMTP_SECURE !== undefined
+      ? process.env.SMTP_SECURE === "true"
+      : Number(process.env.SMTP_PORT || 465) === 465,
+  smtpFromName: process.env.SMTP_FROM_NAME || "Cashlytics",
   // Email delivery (Resend)
   resendApiKey: process.env.RESEND_API_KEY || "",
   emailFrom: process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL || "Cashlytics <onboarding@resend.dev>",
@@ -23,6 +33,8 @@ const env = {
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
   googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5001/api/auth/google/callback",
+  // Initial Admin Provisioning
+  adminEmail: (process.env.ADMIN_EMAIL || "").toLowerCase().trim(),
 };
 
 module.exports = env;

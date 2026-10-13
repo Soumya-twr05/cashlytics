@@ -20,8 +20,22 @@ async function authMiddleware(req, res, next) {
   }
 }
 
-function signToken(user) {
-  return jwt.sign({ sub: user.id, email: user.email }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+function requireAdmin(req, res, next) {
+  if (!req.user) {
+    return fail(res, "Authentication required", 401);
+  }
+  if (req.user.role !== "admin") {
+    return fail(res, "Forbidden: Administrator access required", 403);
+  }
+  return next();
 }
 
-module.exports = { authMiddleware, signToken };
+function signToken(user) {
+  return jwt.sign(
+    { sub: user.id || user._id, email: user.email, role: user.role || "user" },
+    env.jwtSecret,
+    { expiresIn: env.jwtExpiresIn }
+  );
+}
+
+module.exports = { authMiddleware, requireAdmin, signToken };

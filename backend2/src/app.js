@@ -12,6 +12,7 @@ const intelligenceRoutes = require("./routes/intelligence.routes");
 const budgetRoutes = require("./routes/budget.routes");
 const goalRoutes = require("./routes/goal.routes");
 const assistantRoutes = require("./routes/assistant.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/intelligence", intelligenceRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/assistant", assistantRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((req, res) => {
   console.warn(`404 ${req.method} ${req.path}`);

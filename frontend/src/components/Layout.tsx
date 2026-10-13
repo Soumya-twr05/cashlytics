@@ -149,6 +149,7 @@ const PAGE_LABELS: Record<string, string> = {
   bills: "BILLS & SUBSCRIPTIONS",
   "ai-assistant": "ASK CASHLYTICS",
   profile: "SETTINGS",
+  admin: "ADMIN PANEL",
 };
 
 interface LayoutProps {
@@ -291,11 +292,11 @@ export default function Layout({
             </div>
 
             <div
-              className="text-xs mt-0.5 tracking-wider"
+              className="text-xs mt-0.5 tracking-wider font-mono"
               style={{
-                color: "rgba(200,221,210,0.6)",
+                color: "var(--accent)",
                 fontSize: "9px",
-                letterSpacing: "0.1em",
+                letterSpacing: "0.12em",
               }}
             >
               ADAPTIVE FINANCE
@@ -304,12 +305,12 @@ export default function Layout({
 
           <button
             type="button"
-            className="lg:hidden flex items-center justify-center rounded-md shrink-0"
+            className="lg:hidden flex items-center justify-center rounded-md shrink-0 cursor-pointer"
             style={{
               width: "34px",
               height: "34px",
-              color: "rgba(200,221,210,0.85)",
-              border: "1px solid rgba(255,255,255,0.16)",
+              color: "var(--sidebar-foreground)",
+              border: "1px solid rgba(255,255,255,0.12)",
             }}
             aria-label="Close menu"
             onClick={() => setNavOpen(false)}
@@ -330,17 +331,18 @@ export default function Layout({
 
         <nav className="flex-1 overflow-y-auto py-4 px-3">
           <div
-            className="text-xs font-semibold mb-3 px-2"
+            className="text-xs font-semibold mb-3 px-2 font-mono"
             style={{
-              color: "rgba(200,221,210,0.45)",
+              color: "var(--sidebar-foreground)",
               fontSize: "9px",
-              letterSpacing: "0.12em",
+              letterSpacing: "0.14em",
+              opacity: 0.7,
             }}
           >
             WORKSPACE
           </div>
 
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {NAV_ITEMS.map((item) => {
               const active =
                 page === item.id ||
@@ -350,7 +352,7 @@ export default function Layout({
                 <button
                   key={item.id}
                   onClick={() => goTo(item.id as Page)}
-                  className={`nav-item flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-left text-sm ${
+                  className={`nav-item flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left text-sm cursor-pointer ${
                     active ? "nav-item-active" : ""
                   }`}
                 >
@@ -358,8 +360,8 @@ export default function Layout({
                     className="nav-item-icon shrink-0"
                     style={{
                       color: active
-                        ? "#1b3d2b"
-                        : "rgba(200,221,210,0.6)",
+                        ? "var(--sidebar-active-foreground)"
+                        : "var(--sidebar-foreground)",
                     }}
                   >
                     {item.icon}
@@ -367,19 +369,19 @@ export default function Layout({
 
                   <span
                     className="flex-1 truncate"
-                    style={{ fontSize: "14px" }}
+                    style={{ fontSize: "13.5px", fontWeight: active ? 700 : 500 }}
                   >
                     {item.label}
                   </span>
 
                   {item.badge && (
                     <span
-                      className="text-xs font-semibold rounded px-1.5 py-0.5 shrink-0"
+                      className="text-xs font-mono font-bold rounded px-1.5 py-0.5 shrink-0"
                       style={{
                         background: active
-                          ? "rgba(13,158,126,0.15)"
-                          : "rgba(13,158,126,0.2)",
-                        color: active ? "#0d9e7e" : "#4ecca3",
+                          ? "rgba(5, 5, 5, 0.15)"
+                          : "rgba(200, 255, 69, 0.15)",
+                        color: active ? "#050505" : "#C8FF45",
                         fontSize: "9px",
                         letterSpacing: "0.04em",
                       }}
@@ -391,6 +393,54 @@ export default function Layout({
               );
             })}
           </div>
+
+          {user?.role === "admin" && (
+            <div className="pt-4 border-t border-white/5 mt-3">
+              <div
+                className="text-xs font-semibold mb-2 px-2 font-mono"
+                style={{
+                  color: "var(--sidebar-foreground)",
+                  fontSize: "9px",
+                  letterSpacing: "0.14em",
+                  opacity: 0.7,
+                }}
+              >
+                ADMINISTRATION
+              </div>
+              <button
+                type="button"
+                onClick={() => goTo("admin")}
+                className={`nav-item flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left text-sm cursor-pointer ${
+                  page === "admin" ? "nav-item-active" : ""
+                }`}
+              >
+                <span
+                  className="nav-item-icon shrink-0"
+                  style={{
+                    color: page === "admin" ? "var(--sidebar-active-foreground)" : "#c084fc",
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </span>
+                <span className="flex-1 truncate" style={{ fontSize: "13.5px", fontWeight: page === "admin" ? 700 : 500 }}>
+                  Admin Panel
+                </span>
+                <span
+                  className="text-xs font-mono font-bold rounded px-1.5 py-0.5 shrink-0"
+                  style={{
+                    background: "rgba(168, 85, 247, 0.2)",
+                    color: "#c084fc",
+                    fontSize: "9px",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  ADMIN
+                </span>
+              </button>
+            </div>
+          )}
         </nav>
       </aside>
 
@@ -448,9 +498,9 @@ export default function Layout({
 
             <div className="min-w-0">
               <div
-                className="text-xs font-semibold tracking-widest truncate"
+                className="text-xs font-semibold tracking-widest truncate font-mono"
                 style={{
-                  color: "rgba(200,221,210,0.5)",
+                  color: "var(--sidebar-foreground)",
                   fontSize: "9px",
                   letterSpacing: "0.15em",
                 }}
@@ -459,13 +509,14 @@ export default function Layout({
               </div>
 
               <div
-                className="text-xs mt-0.5 hidden sm:block"
+                className="text-xs mt-0.5 hidden sm:flex items-center gap-2"
                 style={{
-                  color: "rgba(200,221,210,0.45)",
+                  color: "rgba(164, 164, 156, 0.75)",
                   fontSize: "12px",
                 }}
               >
-                Your financial system is observing · Last sync 2 min ago
+                <span className="w-2 h-2 rounded-full bg-[#C8FF45] live-pulse inline-block" />
+                <span>Real-time Financial Engine · Observing</span>
               </div>
             </div>
           </div>
@@ -480,15 +531,17 @@ export default function Layout({
                 aria-label="Open account menu"
                 aria-haspopup="menu"
                 aria-expanded={profileOpen}
-                className="flex items-center justify-center rounded-md text-xs font-bold transition-all duration-150 overflow-hidden"
+                className="flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-150 overflow-hidden cursor-pointer"
                 style={{
                   width: "36px",
                   height: "36px",
                   background: profileOpen
-                    ? "rgba(13,158,126,0.4)"
-                    : "rgba(13,158,126,0.25)",
-                  color: "#0d9e7e",
-                  border: "1px solid rgba(13,158,126,0.4)",
+                    ? "var(--accent)"
+                    : "rgba(255, 255, 255, 0.08)",
+                  color: profileOpen ? "#050505" : "#FFFFFF",
+                  border: profileOpen
+                    ? "1px solid var(--accent)"
+                    : "1px solid rgba(255, 255, 255, 0.14)",
                   padding: 0,
                 }}
               >
@@ -506,20 +559,18 @@ export default function Layout({
               {profileOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 top-[calc(100%+10px)] z-[100] w-[230px] overflow-hidden rounded-xl shadow-2xl"
+                  className="absolute right-0 top-[calc(100%+10px)] z-[100] w-[240px] overflow-hidden rounded-2xl shadow-2xl"
                   style={{
-                    background: "#10231d",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    boxShadow:
-                      "0 18px 45px rgba(0,0,0,0.35)",
+                    background: "#0D0E0D",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    boxShadow: "0 20px 50px rgba(0, 0, 0, 0.5)",
                   }}
                 >
                   {/* Account header */}
                   <div
                     className="px-4 py-3.5"
                     style={{
-                      borderBottom:
-                        "1px solid rgba(255,255,255,0.08)",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
                     }}
                   >
                     <div className="flex items-center gap-3">
@@ -528,11 +579,9 @@ export default function Layout({
                         style={{
                           width: "38px",
                           height: "38px",
-                          background:
-                            "rgba(13,158,126,0.22)",
-                          color: "#4ecca3",
-                          border:
-                            "1px solid rgba(13,158,126,0.35)",
+                          background: "rgba(200, 255, 69, 0.15)",
+                          color: "#C8FF45",
+                          border: "1px solid rgba(200, 255, 69, 0.25)",
                         }}
                       >
                         {userAvatar ? (
@@ -555,10 +604,10 @@ export default function Layout({
                         </div>
 
                         <div
-                          className="text-xs truncate mt-0.5"
+                          className="text-xs truncate mt-0.5 font-mono"
                           style={{
-                            color:
-                              "rgba(200,221,210,0.55)",
+                            color: "var(--sidebar-foreground)",
+                            fontSize: "11px",
                           }}
                         >
                           {displayEmail}
@@ -573,14 +622,13 @@ export default function Layout({
                       type="button"
                       role="menuitem"
                       onClick={handleProfile}
-                      className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left transition-colors"
+                      className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 text-left transition-colors cursor-pointer"
                       style={{
-                        color:
-                          "rgba(230,245,238,0.9)",
+                        color: "rgba(255, 255, 255, 0.9)",
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background =
-                          "rgba(255,255,255,0.07)";
+                          "rgba(255, 255, 255, 0.08)";
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background =
@@ -592,7 +640,7 @@ export default function Layout({
                         style={{
                           width: "30px",
                           height: "30px",
-                          color: "#4ecca3",
+                          color: "var(--accent)",
                         }}
                       >
                         <svg
@@ -621,8 +669,7 @@ export default function Layout({
                         <span
                           className="block text-xs mt-0.5"
                           style={{
-                            color:
-                              "rgba(200,221,210,0.48)",
+                            color: "var(--sidebar-foreground)",
                           }}
                         >
                           Account & preferences
@@ -639,13 +686,46 @@ export default function Layout({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         style={{
-                          color:
-                            "rgba(200,221,210,0.35)",
+                          color: "rgba(164, 164, 156, 0.5)",
                         }}
                       >
                         <path d="M9 18l6-6-6-6" />
                       </svg>
                     </button>
+
+                    {user?.role === "admin" && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setProfileOpen(false);
+                          onNavigate("admin");
+                        }}
+                        className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left transition-colors"
+                        style={{ color: "#c084fc" }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        <span
+                          className="flex items-center justify-center shrink-0"
+                          style={{ width: "30px", height: "30px", color: "#c084fc" }}
+                        >
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                          </svg>
+                        </span>
+                        <span className="flex-1">
+                          <span className="block text-sm font-medium text-white">Admin Panel</span>
+                          <span className="block text-xs mt-0.5" style={{ color: "rgba(192, 132, 252, 0.7)" }}>
+                            System controls & health
+                          </span>
+                        </span>
+                      </button>
+                    )}
 
                     {/* Logout */}
                     <button

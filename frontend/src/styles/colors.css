@@ -1,0 +1,70 @@
+/* ==========================================================================
+   COLORS (colors.css)
+   Landing Page Color Theory — 60-30-10 Balanced Fintech Design System
+   Matches Landing.tsx: Warm Linen Canvas, Obsidian Black, Electric Lime Accent
+   ========================================================================== */
+:root {
+  /* ------------------------------------------------------------------------
+     1. BASE SURFACES (60% Dominant Canvas)
+     ------------------------------------------------------------------------ */
+  --background: #F7F6F0;            /* Warm editorial linen / off-white (exact match to Landing.tsx) */
+  --foreground: #050505;            /* Pitch obsidian black for maximum legibility */
+
+  --card: #FFFFFF;                  /* Elevated crisp white card surfaces */
+  --card-foreground: #050505;       /* Text on card surfaces */
+
+  --secondary: #EFEFE9;             /* Secondary surface / segmented control track */
+  --secondary-foreground: #383832;  /* Secondary high-emphasis text */
+
+  --muted: #EAE9E1;                 /* Subtle muted background / badges */
+  --muted-foreground: #6E6E66;      /* Muted graphite text (exact match to Landing.tsx text-[#6E6E66]) */
+
+  /* ------------------------------------------------------------------------
+     2. BRAND & ACCENT (10% Kinetic Accent)
+     ------------------------------------------------------------------------ */
+  --primary: #1E6B37;               /* Refined botanical emerald (readable text & badges on light surfaces) */
+  --primary-foreground: #FFFFFF;    /* Text on primary solid elements */
+
+  --accent: #C8FF45;                /* Electric Volt Lime signature (exact match to Landing.tsx #C8FF45) */
+  --accent-foreground: #050505;     /* High-contrast pitch black on electric lime */
+  --accent-hover: #A8E63B;          /* Hover volt shade */
+
+  /* ------------------------------------------------------------------------
+     3. BORDERS & RINGS
+     ------------------------------------------------------------------------ */
+  --border: #E2E1D8;                /* Hairline neutral border matching linen canvas */
+  --ring: #050505;                  /* Crisp obsidian focus outline */
+
+  /* ------------------------------------------------------------------------
+     4. NAVIGATION & SIDEBAR (Obsidian Luxury Dark Layer)
+     ------------------------------------------------------------------------ */
+  --sidebar: #0A0B09;               /* Obsidian black with 1% warm tone (matches Landing hero/phone frame) */
+  --sidebar-foreground: #A4A49C;    /* Refined silver-gray text (Landing.tsx #A4A49C) */
+  --sidebar-active: #C8FF45;        /* Electric lime active tab pill */
+  --sidebar-active-foreground: #050505; /* Pitch black text on active pill */
+  --header-bg: #0A0B09;             /* Matching obsidian top header */
+
+  /* ------------------------------------------------------------------------
+     5. SEMANTIC FINANCIAL INDICATORS
+     ------------------------------------------------------------------------ */
+  --income: #15803D;                /* Positive inflow / credit (accessible green) */
+  --positive: #15803D;              /* Surplus / gains */
+  --expense: #E11D48;               /* Outflow / debits (refined crimson rose) */
+  --negative: #E11D48;              /* Losses / deficits */
+  --warning: #D97706;               /* Amber alerts */
+  --forecast: #0284C7;              /* Predictive intelligence / projections */
+  --ai-color: #7C3AED;              /* Contextual intelligence */
+
+  /* ------------------------------------------------------------------------
+     6. CURATED SPENDING CATEGORY PALETTE (Harmonious & Minimal)
+     ------------------------------------------------------------------------ */
+  --cat-food: #D97706;              /* Warm Amber */
+  --cat-transport: #0284C7;         /* Sky Blue */
+  --cat-shopping: #E11D48;          /* Rose Crimson */
+  --cat-bills: #4F46E5;             /* Deep Indigo */
+  --cat-entertainment: #7C3AED;     /* Violet */
+  --cat-healthcare: #059669;        /* Emerald */
+  --cat-lifestyle: #15803D;         /* Forest */
+  --cat-utilities: #0891B2;         /* Cyan */
+  --cat-other: #71717A;             /* Zinc Slate */
+}
