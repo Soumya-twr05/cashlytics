@@ -30,10 +30,10 @@ const ALL_TRANSACTIONS: Transaction[] = [
 const FILTER_TABS = ["All", "Transport", "Entertainment", "Electronics", "Food", "Bills", "Shopping", "Healthcare"];
 
 function ConfidenceBar({ value }: { value: number }) {
-  const color = value >= 95 ? "#0d9e7e" : value >= 85 ? "#f59e0b" : "#f87171";
+  const color = value >= 95 ? "var(--income)" : value >= 85 ? "var(--warning)" : "var(--expense)";
   return (
     <div className="flex items-center gap-2">
-      <div className="relative rounded-full overflow-hidden" style={{ width: "72px", height: "5px", background: "#f0f0ea" }}>
+      <div className="relative rounded-full overflow-hidden" style={{ width: "72px", height: "5px", background: "var(--secondary)" }}>
         <div className="h-full rounded-full" style={{ width: `${value}%`, background: color }} />
       </div>
       <span

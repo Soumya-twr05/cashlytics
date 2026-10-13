@@ -1,5 +1,5 @@
 {
-  "name": "cashlytics-backend2",
+  "name": "cashlytics-server",
   "version": "2.0.0",
   "description": "Cashlytics adaptive financial intelligence API v2",
   "main": "src/server.js",

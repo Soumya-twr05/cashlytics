@@ -307,10 +307,10 @@ function ConfidenceBar({ value }: { value: number }) {
 
   const color =
     safeValue >= 95
-      ? "#0d9e7e"
+      ? "var(--income)"
       : safeValue >= 85
-        ? "#f59e0b"
-        : "#f87171";
+        ? "var(--warning)"
+        : "var(--expense)";
 
   return (
     <div className="flex items-center gap-2">
@@ -319,7 +319,7 @@ function ConfidenceBar({ value }: { value: number }) {
         style={{
           width: "72px",
           height: "5px",
-          background: "#f0f0ea",
+          background: "var(--secondary)",
         }}
       >
         <div

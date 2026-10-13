@@ -31,14 +31,14 @@ Cashlytics is an enterprise-grade personal finance intelligence application that
 
 ## Technology Stack
 
-### Frontend
+### Frontend (`client`)
 - **Framework**: React 18 with TypeScript
 - **Bundler & Tooling**: Vite 8 / Rolldown
 - **Styling**: Modern dark-mode UI with custom CSS variables, Tailwind utility tokens, and JetBrains Mono typographic accents
 - **Visualizations**: Recharts (dynamic line trends, bar charts, custom gauge SVG indicators)
 - **State & Storage**: React Context (`AuthContext`), React hooks, localStorage synchronization
 
-### Backend (`backend2`)
+### Backend (`server`)
 - **Runtime**: Node.js & Express.js
 - **Database**: MongoDB with Mongoose ODM
 - **Validation**: Joi schema validation
@@ -270,7 +270,7 @@ User enters OTP   ──► POST /api/auth/otp/verify  ──► Account created
 
 ### 1. Backend Service
 ```bash
-cd backend2
+cd server
 npm install
 npm run dev
 # Running on http://127.0.0.1:5001
@@ -278,7 +278,7 @@ npm run dev
 
 ### 2. Frontend Application
 ```bash
-cd frontend
+cd client
 npm install
 npm run dev
 # Running on http://localhost:5173
@@ -296,7 +296,7 @@ uvicorn api.main:app --reload --port 8000
 
 ### Running Backend Unit Tests
 ```bash
-cd backend2
+cd server
 npm test
 ```
 

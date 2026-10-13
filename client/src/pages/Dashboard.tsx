@@ -721,7 +721,7 @@ function ChartTooltip({ active, payload, label }: any) {
             ₹{Number(p.value || 0).toLocaleString("en-IN")}
           </span>
 
-          <span style={{ color: "rgba(200,221,210,0.6)" }}>
+          <span style={{ color: "var(--sidebar-foreground)" }}>
             {p.name}
           </span>
         </div>
@@ -1241,7 +1241,7 @@ export default function Dashboard({
               className="text-xs font-semibold tracking-widest"
               style={{
                 color:
-                  "rgba(200,221,210,0.55)",
+                  "var(--sidebar-foreground)",
                 fontSize: "9px",
                 letterSpacing: "0.14em",
               }}
@@ -1253,8 +1253,8 @@ export default function Dashboard({
               className="text-xs font-semibold px-2 py-0.5 rounded"
               style={{
                 background:
-                  "rgba(13,158,126,0.2)",
-                color: "#4ecca3",
+                  "rgba(200, 255, 69, 0.15)",
+                color: "var(--accent)",
                 fontSize: "9px",
                 letterSpacing: "0.06em",
               }}
@@ -1275,7 +1275,7 @@ export default function Dashboard({
                   height="12"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#4ecca3"
+                  stroke="#C8FF45"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1286,7 +1286,7 @@ export default function Dashboard({
                 <span
                   className="text-sm font-semibold"
                   style={{
-                    color: "#4ecca3",
+                    color: "var(--accent)",
                   }}
                 >
                   {trajectory}
@@ -1297,7 +1297,7 @@ export default function Dashboard({
                 className="text-sm leading-relaxed"
                 style={{
                   color:
-                    "rgba(200,221,210,0.7)",
+                    "var(--sidebar-foreground)",
                   fontSize: "13px",
                 }}
               >
@@ -1616,17 +1616,17 @@ export default function Dashboard({
             </h2>
 
             {/* Chart Legend */}
-            <div className="flex items-center gap-4 text-xs" style={{ color: "rgba(200,221,210,0.75)" }}>
+            <div className="flex items-center gap-4 text-xs" style={{ color: "var(--muted-foreground)" }}>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#06b6d4" }} />
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--income)" }} />
                 <span>Income</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#f87171" }} />
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--expense)" }} />
                 <span>Expenses</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "#15803D" }} />
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--forecast)" }} />
                 <span>Savings</span>
               </div>
             </div>
@@ -1694,7 +1694,7 @@ export default function Dashboard({
                     type="monotone"
                     dataKey="savings"
                     name="Savings"
-                    stroke="#15803D"
+                    stroke="#0284C7"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -1703,7 +1703,7 @@ export default function Dashboard({
                     type="monotone"
                     dataKey="expenses"
                     name="Expenses"
-                    stroke="#f87171"
+                    stroke="#E11D48"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -1712,7 +1712,7 @@ export default function Dashboard({
                     type="monotone"
                     dataKey="income"
                     name="Income"
-                    stroke="#06b6d4"
+                    stroke="#15803D"
                     strokeWidth={2}
                     dot={false}
                   />

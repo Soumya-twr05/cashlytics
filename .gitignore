@@ -75,8 +75,8 @@ dist/
 *.onnx
 /models/
 ml/models/
-!backend2/src/models/
-!frontend/src/lib/
+!server/src/models/
+!client/src/lib/
 data/
 datasets/
 

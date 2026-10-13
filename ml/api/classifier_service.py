@@ -7,10 +7,15 @@ import sys
 # --------------------------------------------------
 
 _SRC_DIR = Path(__file__).resolve().parent.parent / "src"
-if str(_SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(_SRC_DIR))
+_ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+for _p in (str(_SRC_DIR), str(_ROOT_DIR)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from preprocessing import clean_text
+try:
+    from ml.src.preprocessing import clean_text
+except ImportError:
+    from preprocessing import clean_text  # pyrefly: ignore [missing-import]
 
 
 # --------------------------------------------------

@@ -14,19 +14,22 @@ interface Budget {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  "Food & Dining": "#10b981",
-  Food: "#10b981",
-  Shopping: "#f87171",
-  Transport: "#22d3ee",
-  Transportation: "#22d3ee",
-  Entertainment: "#f59e0b",
-  "Bills & Utilities": "#818cf8",
-  Bills: "#818cf8",
-  Utilities: "#818cf8",
-  Healthcare: "#34d399",
-  Lifestyle: "#0d9e7e",
-  Education: "#8b5cf6",
-  Other: "#6b7280",
+  "Food & Dining": "#D97706",
+  Food: "#D97706",
+  Shopping: "#E11D48",
+  Transport: "#0284C7",
+  Transportation: "#0284C7",
+  Entertainment: "#7C3AED",
+  "Bills & Utilities": "#4F46E5",
+  Bills: "#4F46E5",
+  Utilities: "#0891B2",
+  Healthcare: "#059669",
+  Lifestyle: "#15803D",
+  Education: "#8B5CF6",
+  Groceries: "#65A30D",
+  Financial: "#0D9488",
+  Rent: "#4F46E5",
+  Other: "#71717A",
 };
 
 function daysLeftInMonth() {

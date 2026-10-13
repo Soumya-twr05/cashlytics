@@ -1,0 +1,44 @@
+@import './styles/index.css';
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-accent-hover: var(--accent-hover);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+  --color-header-bg: var(--header-bg);
+  --color-income: var(--income);
+  --color-positive: var(--positive);
+  --color-expense: var(--expense);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-forecast: var(--forecast);
+  --color-ai-color: var(--ai-color);
+  --color-cat-food: var(--cat-food);
+  --color-cat-transport: var(--cat-transport);
+  --color-cat-shopping: var(--cat-shopping);
+  --color-cat-bills: var(--cat-bills);
+  --color-cat-entertainment: var(--cat-entertainment);
+  --color-cat-healthcare: var(--cat-healthcare);
+  --color-cat-lifestyle: var(--cat-lifestyle);
+  --color-cat-utilities: var(--cat-utilities);
+  --color-cat-other: var(--cat-other);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+  --font-heading: var(--font-manrope);
+}

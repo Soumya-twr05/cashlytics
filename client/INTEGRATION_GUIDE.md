@@ -38,7 +38,7 @@ This guide details the complete integration between Frontend, Backend API, and M
 
 ## Integration Files
 
-### Frontend API Client (`frontend/src/lib/api.ts`)
+### Frontend API Client (`client/src/lib/api.ts`)
 
 Complete API client with typed endpoints for all services:
 
@@ -96,7 +96,7 @@ Complete API client with typed endpoints for all services:
 - `checkBackendHealth()` - Backend service health
 - `checkMLHealth()` - ML service health
 
-### Custom Hooks (`frontend/src/lib/hooks.ts`)
+### Custom Hooks (`client/src/lib/hooks.ts`)
 
 React hooks for data fetching with loading/error states:
 
@@ -132,7 +132,7 @@ const backendHealthy = useBackendHealth()
 const mlHealthy = useMLHealth()
 ```
 
-### Authentication Context (`frontend/src/lib/auth-context.tsx`)
+### Authentication Context (`client/src/lib/auth-context.tsx`)
 
 Global authentication state management:
 
@@ -156,7 +156,7 @@ import { AuthProvider } from "./lib/auth-context"
 </AuthProvider>
 ```
 
-### Configuration (`frontend/src/lib/config.ts`)
+### Configuration (`client/src/lib/config.ts`)
 
 Centralized configuration:
 
@@ -172,7 +172,7 @@ console.log(SERVICE_URLS.BACKEND)
 console.log(SERVICE_URLS.ML)
 ```
 
-### Integration Checker (`frontend/src/lib/integration-check.ts`)
+### Integration Checker (`client/src/lib/integration-check.ts`)
 
 Verify all services are working:
 
@@ -194,7 +194,7 @@ const mlStatus = await IntegrationChecker.validateMLAPIs()
 ### 1. Backend Setup
 
 ```bash
-cd backend2
+cd server
 npm install
 npm run dev
 ```
@@ -226,7 +226,7 @@ Runs on `http://127.0.0.1:8000`
 ### 3. Frontend Setup
 
 ```bash
-cd frontend
+cd client
 npm install
 npm run dev
 ```

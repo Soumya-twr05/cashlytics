@@ -27,13 +27,13 @@ function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
     <div
       className="px-3 py-2 rounded-md text-xs shadow-lg"
       style={{
-        background: "#1b3d2b",
+        background: "var(--sidebar)",
         border: "1px solid rgba(255,255,255,0.15)",
         fontFamily: "var(--font-jetbrains)",
         color: "#fff",
       }}
     >
-      <div style={{ color: "rgba(200,221,210,0.7)", marginBottom: "2px" }}>{label}</div>
+      <div style={{ color: "var(--sidebar-foreground)", marginBottom: "2px" }}>{label}</div>
       <div className="font-semibold">{formatINR(val, true)}</div>
     </div>
   );
@@ -322,25 +322,25 @@ export default function WhatIfSimulator() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-4">
           <div
             className="rounded-xl p-7 animate-pulse"
-            style={{ background: "rgba(6,182,212,0.04)", border: "1px solid rgba(6,182,212,0.15)", minHeight: "340px" }}
+            style={{ background: "rgba(2,132,199,0.04)", border: "1px solid rgba(2,132,199,0.15)", minHeight: "340px" }}
           >
-            <div className="h-3 w-28 bg-gray-700/40 rounded mb-4" />
-            <div className="h-7 w-64 bg-gray-700/40 rounded mb-3" />
-            <div className="h-4 w-full bg-gray-700/30 rounded mb-8" />
-            <div className="h-12 w-48 bg-gray-700/40 rounded mb-6" />
-            <div className="h-2 w-full bg-gray-700/30 rounded" />
+            <div className="h-3 w-28 bg-muted rounded mb-4" />
+            <div className="h-7 w-64 bg-muted rounded mb-3" />
+            <div className="h-4 w-full bg-secondary rounded mb-8" />
+            <div className="h-12 w-48 bg-muted rounded mb-6" />
+            <div className="h-2 w-full bg-secondary rounded" />
           </div>
           <div
             className="rounded-xl p-7 animate-pulse"
             style={{ background: "var(--card)", border: "1px solid var(--border)", minHeight: "340px" }}
           >
-            <div className="h-4 w-36 bg-gray-700/40 rounded mb-6" />
+            <div className="h-4 w-36 bg-muted rounded mb-6" />
             <div className="grid grid-cols-3 gap-4 mb-7">
-              <div className="h-16 bg-gray-700/30 rounded" />
-              <div className="h-16 bg-gray-700/30 rounded" />
-              <div className="h-16 bg-gray-700/30 rounded" />
+              <div className="h-16 bg-secondary rounded" />
+              <div className="h-16 bg-secondary rounded" />
+              <div className="h-16 bg-secondary rounded" />
             </div>
-            <div className="h-40 bg-gray-700/20 rounded" />
+            <div className="h-40 bg-secondary/60 rounded" />
           </div>
         </div>
       ) : (
@@ -350,8 +350,8 @@ export default function WhatIfSimulator() {
           <div
             className="rounded-xl p-7 flex flex-col justify-between"
             style={{
-              background: "rgba(6,182,212,0.06)",
-              border: "1px solid rgba(6,182,212,0.18)",
+              background: "rgba(2,132,199,0.06)",
+              border: "1px solid rgba(2,132,199,0.18)",
             }}
           >
             <div>
@@ -417,7 +417,7 @@ export default function WhatIfSimulator() {
                       style={{
                         height: "5px",
                         appearance: "none",
-                        background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${sliderPct}%, #1b3d2b ${sliderPct}%, #1b3d2b 100%)`,
+                        background: `linear-gradient(to right, #0284C7 0%, #0284C7 ${sliderPct}%, var(--border) ${sliderPct}%, var(--border) 100%)`,
                         borderRadius: "3px",
                         cursor: "pointer",
                         outline: "none",
@@ -437,7 +437,7 @@ export default function WhatIfSimulator() {
                 /* Empty state when category has zero transactions */
                 <div
                   className="p-5 rounded-lg mb-4 text-center"
-                  style={{ background: "rgba(0,0,0,0.15)", border: "1px dashed rgba(255,255,255,0.15)" }}
+                  style={{ background: "var(--secondary)", border: "1px dashed var(--border)" }}
                 >
                   <div className="text-sm font-semibold mb-1" style={{ color: "var(--foreground)" }}>
                     No spending data available for {scenarioMeta.categoryName} this month
@@ -694,7 +694,7 @@ export default function WhatIfSimulator() {
                       tickFormatter={formatCompactINR}
                     />
                     <Tooltip content={<ChartTooltip />} />
-                    <Bar dataKey="value" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="value" fill="#0284C7" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -721,7 +721,7 @@ export default function WhatIfSimulator() {
           -webkit-appearance: none;
           width: 18px; height: 18px;
           border-radius: 50%;
-          background: #06b6d4;
+          background: #0284C7;
           border: 2px solid #fff;
           box-shadow: 0 1px 4px rgba(0,0,0,0.2);
           cursor: pointer;
@@ -729,7 +729,7 @@ export default function WhatIfSimulator() {
         input[type=range]::-moz-range-thumb {
           width: 18px; height: 18px;
           border-radius: 50%;
-          background: #06b6d4;
+          background: #0284C7;
           border: 2px solid #fff;
           cursor: pointer;
         }
