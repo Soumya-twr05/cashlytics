@@ -1,4 +1,7 @@
+
 # from fastapi import FastAPI
+# from fastapi.middleware.cors import CORSMiddleware
+
 # from ml.api.forecast_service import forecast_monthly_spending
 # from ml.api.anomaly_service import detect_anomaly
 # from ml.api.classifier_service import predict_category
@@ -12,12 +15,46 @@
 # )
 
 
+# # ============================================================
+# # APP
+# # ============================================================
+
 # app = FastAPI(
 #     title="Cashlytics ML API",
 #     description="Machine Learning service for Cashlytics",
 #     version="1.0.0",
 # )
 
+
+# # ============================================================
+# # CORS
+# # ============================================================
+# #
+# # Cashlytics frontend runs on:
+# #   http://localhost:8443
+# #
+# # The ML API runs on:
+# #   http://127.0.0.1:8000
+# #
+# # Browsers consider these different origins, so FastAPI must
+# # explicitly allow the frontend to communicate with the ML API.
+# #
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=[
+#         "http://localhost:8443",
+#         "http://127.0.0.1:8443",
+#     ],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+
+# # ============================================================
+# # ROOT
+# # ============================================================
 
 # @app.get("/")
 # def root():
@@ -28,12 +65,20 @@
 #     }
 
 
+# # ============================================================
+# # HEALTH CHECK
+# # ============================================================
+
 # @app.get("/health")
 # def health_check():
 #     return {
 #         "status": "healthy"
 #     }
 
+
+# # ============================================================
+# # TRANSACTION CATEGORY PREDICTION
+# # ============================================================
 
 # @app.post(
 #     "/predict-category",
@@ -42,8 +87,31 @@
 # def predict_transaction_category(
 #     request: TransactionRequest
 # ):
-#     return predict_category(request.description)
+#     """
+#     Predict the category of a financial transaction.
 
+#     The frontend sends:
+#     {
+#         "description": "Swiggy dinner",
+#         "amount": 450
+#     }
+
+#     The current trained classifier primarily uses the
+#     transaction description to predict the category.
+
+#     The amount is accepted as part of the transaction
+#     intelligence request and can be used by future
+#     models/features.
+#     """
+
+#     return predict_category(
+#         request.description
+#     )
+
+
+# # ============================================================
+# # ANOMALY DETECTION
+# # ============================================================
 
 # @app.post(
 #     "/detect-anomaly",
@@ -61,6 +129,11 @@
 #         merchant_frequency=request.merchant_frequency,
 #         user_avg_category_spend=request.user_avg_category_spend,
 #     )
+
+
+# # ============================================================
+# # SPENDING FORECAST
+# # ============================================================
 
 # @app.post(
 #     "/forecast",
@@ -80,13 +153,16 @@
 #     )
 
 
+
+
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ml.api.forecast_service import forecast_monthly_spending
-from ml.api.anomaly_service import detect_anomaly
-from ml.api.classifier_service import predict_category
-from ml.api.schemas import (
+from api.forecast_service import forecast_monthly_spending
+from api.anomaly_service import detect_anomaly
+from api.classifier_service import predict_category
+from api.schemas import (
     TransactionRequest,
     CategoryResponse,
     AnomalyRequest,
@@ -110,16 +186,6 @@ app = FastAPI(
 # ============================================================
 # CORS
 # ============================================================
-#
-# Cashlytics frontend runs on:
-#   http://localhost:8443
-#
-# The ML API runs on:
-#   http://127.0.0.1:8000
-#
-# Browsers consider these different origins, so FastAPI must
-# explicitly allow the frontend to communicate with the ML API.
-#
 
 app.add_middleware(
     CORSMiddleware,
@@ -163,26 +229,13 @@ def health_check():
 
 @app.post(
     "/predict-category",
-    response_model=CategoryResponse
+    response_model=CategoryResponse,
 )
 def predict_transaction_category(
-    request: TransactionRequest
+    request: TransactionRequest,
 ):
     """
     Predict the category of a financial transaction.
-
-    The frontend sends:
-    {
-        "description": "Swiggy dinner",
-        "amount": 450
-    }
-
-    The current trained classifier primarily uses the
-    transaction description to predict the category.
-
-    The amount is accepted as part of the transaction
-    intelligence request and can be used by future
-    models/features.
     """
 
     return predict_category(
@@ -196,10 +249,10 @@ def predict_transaction_category(
 
 @app.post(
     "/detect-anomaly",
-    response_model=AnomalyResponse
+    response_model=AnomalyResponse,
 )
 def detect_transaction_anomaly(
-    request: AnomalyRequest
+    request: AnomalyRequest,
 ):
     return detect_anomaly(
         amount=request.amount,
@@ -218,10 +271,10 @@ def detect_transaction_anomaly(
 
 @app.post(
     "/forecast",
-    response_model=ForecastResponse
+    response_model=ForecastResponse,
 )
 def forecast(
-    request: ForecastRequest
+    request: ForecastRequest,
 ):
     return forecast_monthly_spending(
         current_spending=request.current_spending,
