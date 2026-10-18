@@ -17,7 +17,10 @@ const adminRoutes = require("./routes/admin.routes");
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: env.clientOrigin, credentials: true }));
+const allowedOrigins = env.clientOrigin.includes(",")
+  ? env.clientOrigin.split(",").map((s) => s.trim())
+  : env.clientOrigin;
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
 app.use(apiLimiter);
 

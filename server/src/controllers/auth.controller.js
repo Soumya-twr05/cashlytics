@@ -91,12 +91,13 @@ async function logout(req, res, next) {
 
 async function googleAuth(req, res, next) {
   try {
+    const clientRedirectBase = env.clientOrigin.split(",")[0].trim();
     if (!env.googleClientId || !env.googleClientSecret) {
       const acceptsJson = req.xhr || req.headers.accept?.includes("application/json");
       if (acceptsJson) {
         return fail(res, "Google OAuth is not configured on the server", 503);
       }
-      return res.redirect(`${env.clientOrigin}/?auth_error=${encodeURIComponent("Google OAuth credentials are not configured on the server")}`);
+      return res.redirect(`${clientRedirectBase}/?auth_error=${encodeURIComponent("Google OAuth credentials are not configured on the server")}`);
     }
 
     const params = new URLSearchParams({
@@ -115,24 +116,25 @@ async function googleAuth(req, res, next) {
 }
 
 async function googleAuthCallback(req, res, next) {
+  const clientRedirectBase = env.clientOrigin.split(",")[0].trim();
   try {
     if (req.query.error) {
-      return res.redirect(`${env.clientOrigin}/?auth_error=${encodeURIComponent(req.query.error)}`);
+      return res.redirect(`${clientRedirectBase}/?auth_error=${encodeURIComponent(req.query.error)}`);
     }
 
     if (!req.query.code) {
-      return res.redirect(`${env.clientOrigin}/?auth_error=missing_code`);
+      return res.redirect(`${clientRedirectBase}/?auth_error=missing_code`);
     }
 
     const result = await handleGoogleCallback(req.query.code);
 
     return res.redirect(
-      `${env.clientOrigin}/?token=${encodeURIComponent(result.token)}&onboardingCompleted=${result.onboardingCompleted ? "true" : "false"}&auth=google`
+      `${clientRedirectBase}/?token=${encodeURIComponent(result.token)}&onboardingCompleted=${result.onboardingCompleted ? "true" : "false"}&auth=google`
     );
   } catch (err) {
     console.error("Google OAuth callback error:", err.message);
     return res.redirect(
-      `${env.clientOrigin}/?auth_error=${encodeURIComponent(err.message || "google_auth_failed")}`
+      `${clientRedirectBase}/?auth_error=${encodeURIComponent(err.message || "google_auth_failed")}`
     );
   }
 }

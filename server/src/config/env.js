@@ -33,6 +33,11 @@ const env = {
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
   googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5001/api/auth/google/callback",
+  // AI Provider & LLM Settings
+  aiProvider: process.env.AI_PROVIDER || (process.env.NODE_ENV === "production" ? "groq" : "auto"),
+  groqApiKey: process.env.GROQ_API_KEY || "",
+  groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+  groqBaseUrl: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
   // Initial Admin Provisioning
   adminEmail: (process.env.ADMIN_EMAIL || "").toLowerCase().trim(),
 };

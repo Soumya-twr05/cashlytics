@@ -190,6 +190,138 @@ function parseAndValidateResponse(rawText, defaultFallback = {}) {
   };
 }
 
+const GROQ_TIMEOUT_MS = 25_000;
+
+async function callGroq(cleanPrompt, context = {}) {
+  if (!env.groqApiKey) {
+    console.warn("Groq API key is not configured.");
+    return null;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, GROQ_TIMEOUT_MS);
+
+  try {
+    const promptText = buildPrompt(cleanPrompt, context);
+    const response = await fetch(`${env.groqBaseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.groqApiKey}`,
+      },
+      body: JSON.stringify({
+        model: env.groqModel || "openai/gpt-oss-120b",
+        messages: [
+          {
+            role: "system",
+            content: "You are Cashlytics, an AI personal finance assistant. Always output valid JSON exactly matching the requested schema.",
+          },
+          {
+            role: "user",
+            content: promptText,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(
+        `Groq request failed with ${response.status}${
+          errorText ? `: ${errorText.slice(0, 200)}` : ""
+        }`
+      );
+    }
+
+    const json = await response.json();
+    const rawText = String(json.choices?.[0]?.message?.content || "").trim();
+
+    if (!rawText) {
+      throw new Error("Groq returned an empty response.");
+    }
+
+    const structured = parseAndValidateResponse(rawText, fallbackReply(context));
+    return {
+      source: "groq",
+      ...structured,
+    };
+  } catch (err) {
+    if (err.name === "AbortError") {
+      console.warn("Groq request timed out.");
+    } else {
+      console.warn(`Groq unavailable: ${err.message}`);
+    }
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function callOllama(cleanPrompt, context = {}) {
+  if (!env.ollamaBaseUrl || !env.ollamaModel) {
+    return null;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, OLLAMA_TIMEOUT_MS);
+
+  try {
+    const body = {
+      model: env.ollamaModel,
+      stream: false,
+      format: "json",
+      prompt: buildPrompt(cleanPrompt, context),
+    };
+
+    const response = await fetch(`${env.ollamaBaseUrl}/api/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(
+        `Ollama request failed with ${response.status}${
+          errorText ? `: ${errorText.slice(0, 200)}` : ""
+        }`
+      );
+    }
+
+    const json = await response.json();
+    const rawText = String(json.response || "").trim();
+
+    if (!rawText) {
+      throw new Error("Ollama returned an empty response.");
+    }
+
+    const structured = parseAndValidateResponse(rawText, fallbackReply(context));
+    return {
+      source: "ollama",
+      ...structured,
+    };
+  } catch (err) {
+    if (err.name === "AbortError") {
+      console.warn("Ollama request timed out.");
+    } else {
+      console.warn(`Ollama unavailable: ${err.message}`);
+    }
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function chat(prompt, context = {}) {
   const cleanPrompt = String(prompt || "").trim();
 
@@ -205,86 +337,29 @@ async function chat(prompt, context = {}) {
     };
   }
 
-  if (!env.ollamaBaseUrl) {
-    console.warn("Ollama base URL is not configured.");
-    return {
-      source: "fallback",
-      ...fallbackReply(context),
-    };
+  // 1. If provider is explicitly 'groq' or in production (e.g. deployed on Render):
+  const preferGroq = env.aiProvider === "groq" || env.nodeEnv === "production";
+
+  if (preferGroq) {
+    const groqResult = await callGroq(cleanPrompt, context);
+    if (groqResult) return groqResult;
   }
 
-  if (!env.ollamaModel) {
-    console.warn("Ollama model is not configured.");
-    return {
-      source: "fallback",
-      ...fallbackReply(context),
-    };
+  // 2. Otherwise (local development): try Ollama first
+  const ollamaResult = await callOllama(cleanPrompt, context);
+  if (ollamaResult) return ollamaResult;
+
+  // 3. Fallback to Groq if local Ollama wasn't available
+  if (!preferGroq && env.groqApiKey) {
+    const groqFallback = await callGroq(cleanPrompt, context);
+    if (groqFallback) return groqFallback;
   }
 
-  const controller = new AbortController();
-
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, OLLAMA_TIMEOUT_MS);
-
-  try {
-    const body = {
-      model: env.ollamaModel,
-      stream: false,
-      format: "json",
-      prompt: buildPrompt(cleanPrompt, context),
-    };
-
-    const response = await fetch(
-      `${env.ollamaBaseUrl}/api/generate`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-
-      throw new Error(
-        `Ollama request failed with ${response.status}${
-          errorText ? `: ${errorText.slice(0, 200)}` : ""
-        }`
-      );
-    }
-
-    const json = await response.json();
-
-    const rawText = String(json.response || "").trim();
-
-    if (!rawText) {
-      throw new Error("Ollama returned an empty response.");
-    }
-
-    const structured = parseAndValidateResponse(rawText, fallbackReply(context));
-
-    return {
-      source: "ollama",
-      ...structured,
-    };
-  } catch (err) {
-    if (err.name === "AbortError") {
-      console.warn("Ollama request timed out.");
-    } else {
-      console.warn(`Ollama unavailable: ${err.message}`);
-    }
-
-    return {
-      source: "fallback",
-      ...fallbackReply(context),
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
+  // 4. Default safe response if no LLM service responds
+  return {
+    source: "fallback",
+    ...fallbackReply(context),
+  };
 }
 
 function fallbackReply(context = {}) {

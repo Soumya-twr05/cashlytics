@@ -1,7 +1,7 @@
 
 
-export const API_BASE_URL = "http://127.0.0.1:5001/api";
-export const ML_BASE_URL = "http://127.0.0.1:8000";
+export const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || "http://127.0.0.1:5001/api";
+export const ML_BASE_URL = (import.meta as any).env?.VITE_ML_URL || "http://127.0.0.1:8000";
 
 export type ApiResponse<T> = {
   success: boolean;
