@@ -1,48 +1,32 @@
 /**
  * email.service.js
  *
- * Email delivery with two providers, in priority order:
+ * Transactional email delivery via Brevo (formerly Sendinblue) official HTTPS API.
+ * Uses @getbrevo/brevo TransactionalEmailsApi.
  *
- *  1. Brevo (primary)  – HTTPS API, 300 emails/day free, no custom domain needed.
- *     The sender must be the Gmail address you registered your Brevo account with.
- *     Set BREVO_API_KEY + BREVO_FROM_EMAIL in Render env vars.
- *
- *  2. Resend (fallback) – HTTPS API, 100 emails/day free, but requires a verified
- *     custom domain to send to arbitrary users.  If you only have the Resend free
- *     plan without a domain, set RESEND_FROM_EMAIL=onboarding@resend.dev and
- *     leave SMTP_USER/SMTP_PASS empty.
- *
- * Gmail SMTP (port 465) is intentionally omitted: Render's free tier blocks it.
+ * Compatible with Render's free tier (HTTPS on port 443; no outbound SMTP).
+ * Supports arbitrary recipients without a custom domain once the sender email is verified in Brevo.
  */
 
 const env = require("../config/env");
 
 // ---------------------------------------------------------------------------
-// 1.  Brevo client (lazy-initialised so import never throws)
+// Startup diagnostics (masked, safe to log)
 // ---------------------------------------------------------------------------
-let brevoApi = null;
-if (env.brevoApiKey) {
-  try {
-    const SibApiV3Sdk = require("@getbrevo/brevo");
-    const instance = new SibApiV3Sdk.TransactionalEmailsApi();
-    instance.authentications["apiKey"].apiKey = env.brevoApiKey;
-    brevoApi = instance;
-  } catch (err) {
-    console.error("[EMAIL] Failed to initialise Brevo client:", err.message);
-  }
-}
+const configuredKey = (env.brevoApiKey || "").trim();
+const configuredFrom = (env.brevoFromEmail || "").trim();
 
-// ---------------------------------------------------------------------------
-// 2.  Resend client
-// ---------------------------------------------------------------------------
-let resendClient = null;
-if (env.resendApiKey) {
-  try {
-    const { Resend } = require("resend");
-    resendClient = new Resend(env.resendApiKey);
-  } catch (err) {
-    console.error("[EMAIL] Failed to initialise Resend client:", err.message);
-  }
+if (configuredKey) {
+  const keyType = configuredKey.startsWith("xkeysib-")
+    ? "API v3 key (valid format)"
+    : configuredKey.startsWith("xsmtpsib-")
+    ? "WARNING: SMTP relay key detected (starts with xsmtpsib-). Brevo REST API requires an API v3 key (starts with xkeysib-)!"
+    : "custom key format";
+  console.log(
+    `[EMAIL] Brevo provider loaded: sender="${configuredFrom || "NOT SET"}", keyType=${keyType}`
+  );
+} else {
+  console.log("[EMAIL] Brevo not configured (BREVO_API_KEY missing in environment)");
 }
 
 // ---------------------------------------------------------------------------
@@ -93,58 +77,77 @@ function buildOtpText(otp) {
 }
 
 // ---------------------------------------------------------------------------
-// 3.  Provider implementations
+// Brevo HTTPS API Sender
 // ---------------------------------------------------------------------------
-
-/**
- * Send via Brevo HTTPS API.
- * Works on Render free tier.  Sender must match the email registered in Brevo.
- */
 async function sendViaBrevo(to, subject, html, text) {
+  const apiKey = (env.brevoApiKey || "").trim();
+  const fromEmail = (env.brevoFromEmail || "").trim();
+  const fromName = (env.brevoFromName || "Cashlytics").trim();
+
+  if (!apiKey) {
+    const error = new Error("BREVO_API_KEY is not configured.");
+    error.status = 503;
+    throw error;
+  }
+
+  if (apiKey.startsWith("xsmtpsib-")) {
+    const error = new Error(
+      "BREVO_API_KEY is configured with an SMTP relay key (starts with 'xsmtpsib-'). Brevo HTTPS API requires an API v3 key (starts with 'xkeysib-'). Please generate an API Key in Brevo under SMTP & API -> API Keys tab."
+    );
+    error.status = 500;
+    throw error;
+  }
+
+  if (!fromEmail) {
+    const error = new Error("BREVO_FROM_EMAIL is not configured.");
+    error.status = 503;
+    throw error;
+  }
+
   const SibApiV3Sdk = require("@getbrevo/brevo");
+  const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+  apiInstance.authentications["apiKey"].apiKey = apiKey;
 
   const email = new SibApiV3Sdk.SendSmtpEmail();
   email.sender = {
-    name: env.brevoFromName || "Cashlytics",
-    email: env.brevoFromEmail,
+    name: fromName,
+    email: fromEmail,
   };
   email.to = [{ email: to }];
   email.subject = subject;
   email.htmlContent = html;
   email.textContent = text;
 
-  const data = await brevoApi.sendTransacEmail(email);
-  return { delivered: true, messageId: data?.messageId || data?.body?.messageId };
-}
-
-/**
- * Send via Resend HTTPS API.
- * Requires a verified custom domain to reach arbitrary recipients.
- * With onboarding@resend.dev you can only email the Resend account owner.
- */
-async function sendViaResend(to, subject, html, text) {
-  const response = await resendClient.emails.send({
-    from: env.resendFromEmail || "Cashlytics <onboarding@resend.dev>",
-    to,
-    subject,
-    html,
-    text,
-  });
-
-  if (response.error) {
-    const msg = response.error.message || JSON.stringify(response.error);
-    throw new Error(`Resend error: ${msg}`);
+  try {
+    const data = await apiInstance.sendTransacEmail(email);
+    const messageId =
+      data?.messageId || data?.body?.messageId || (data?.response ? "accepted" : "sent");
+    return { delivered: true, messageId };
+  } catch (err) {
+    let detail = err.message;
+    if (err.response && err.response.body) {
+      if (typeof err.response.body === "object") {
+        detail =
+          err.response.body.message ||
+          err.response.body.code ||
+          JSON.stringify(err.response.body);
+      } else {
+        detail = String(err.response.body);
+      }
+    }
+    const error = new Error(`Brevo delivery failed: ${detail}`);
+    error.status = 502;
+    error.originalError = err;
+    throw error;
   }
-
-  return { delivered: true, messageId: response.data?.id };
 }
 
 // ---------------------------------------------------------------------------
-// 4.  Public API
+// Public API
 // ---------------------------------------------------------------------------
 
 /**
- * Send an OTP verification email.
+ * Send an OTP verification email using Brevo HTTPS API.
  *
  * @param {string} to  - Recipient email address
  * @param {string} otp - 6-digit verification code
@@ -162,57 +165,45 @@ async function sendOtpEmail(to, otp) {
   const html = buildOtpHtml(otp);
   const text = buildOtpText(otp);
 
-  // ── Provider 1: Brevo ─────────────────────────────────────────────────────
-  if (brevoApi && env.brevoFromEmail) {
-    try {
-      const result = await sendViaBrevo(normalizedTo, subject, html, text);
-      console.log(
-        `[EMAIL] OTP → ${normalizedTo} via Brevo (id: ${result.messageId})`
+  const apiKey = (env.brevoApiKey || "").trim();
+  const fromEmail = (env.brevoFromEmail || "").trim();
+
+  // If Brevo is not configured
+  if (!apiKey || !fromEmail) {
+    if (env.nodeEnv === "production") {
+      const missingVars = [];
+      if (!apiKey) missingVars.push("BREVO_API_KEY");
+      if (!fromEmail) missingVars.push("BREVO_FROM_EMAIL");
+      const err = new Error(
+        `Email delivery is not configured. Missing environment variable(s): ${missingVars.join(
+          ", "
+        )}. Please configure them in Render dashboard.`
       );
-      return { ...result, provider: "brevo" };
-    } catch (err) {
-      console.error("[EMAIL] Brevo delivery failed:", err.message);
-      // fall through to Resend
+      err.status = 503;
+      throw err;
     }
-  }
 
-  // ── Provider 2: Resend ────────────────────────────────────────────────────
-  if (resendClient) {
-    try {
-      const result = await sendViaResend(normalizedTo, subject, html, text);
-      console.log(
-        `[EMAIL] OTP → ${normalizedTo} via Resend (id: ${result.messageId})`
-      );
-      return { ...result, provider: "resend" };
-    } catch (err) {
-      console.error("[EMAIL] Resend delivery failed:", err.message);
-
-      if (env.nodeEnv === "production") {
-        const error = new Error(
-          "Failed to deliver verification email. Please try again later."
-        );
-        error.status = 502;
-        throw error;
-      }
-
-      return { delivered: false, error: err.message };
-    }
-  }
-
-  // ── No provider configured ────────────────────────────────────────────────
-  if (env.nodeEnv === "production") {
-    const err = new Error(
-      "Email delivery is not configured. Please contact support."
+    console.log(
+      `[EMAIL-DEV] OTP for ${normalizedTo}: ${otp} (Brevo not configured, simulated delivery)`
     );
-    err.status = 503;
-    throw err;
+    return { delivered: false, simulated: true };
   }
 
-  // Development/staging: log OTP to console (auth.service exposes it as devOtp)
-  console.log(
-    `[EMAIL-DEV] OTP for ${normalizedTo} (no provider configured, simulated delivery)`
-  );
-  return { delivered: false, simulated: true };
+  try {
+    const result = await sendViaBrevo(normalizedTo, subject, html, text);
+    console.log(
+      `[EMAIL] OTP → ${normalizedTo} via Brevo (id: ${result.messageId})`
+    );
+    return { ...result, provider: "brevo" };
+  } catch (err) {
+    console.error(`[EMAIL] ${err.message}`);
+
+    if (env.nodeEnv === "production") {
+      throw err;
+    }
+
+    return { delivered: false, error: err.message };
+  }
 }
 
 module.exports = { sendOtpEmail };

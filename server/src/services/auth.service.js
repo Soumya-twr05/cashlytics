@@ -72,7 +72,7 @@ async function requestOtp(email, mode = "signin") {
     expiresAt,
   });
 
-  // Attempt email delivery via Resend
+  // Attempt email delivery via Brevo HTTPS API
   const emailResult = await sendOtpEmail(normalizedEmail, otp);
 
   return {
