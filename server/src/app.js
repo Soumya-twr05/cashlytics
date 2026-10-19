@@ -16,6 +16,11 @@ const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
 
+// Trust the first proxy hop (required for Render and other reverse-proxy hosts).
+// Without this, express-rate-limit logs a proxy configuration warning and may
+// count every request as coming from the same IP address.
+app.set("trust proxy", 1);
+
 app.use(helmet());
 const allowedOrigins = env.clientOrigin.includes(",")
   ? env.clientOrigin.split(",").map((s) => s.trim())
