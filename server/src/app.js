@@ -30,7 +30,17 @@ app.use(express.json({ limit: "1mb" }));
 app.use(apiLimiter);
 
 app.get("/health", (_req, res) => {
-  res.json({ success: true, service: "cashlytics-api-v2", env: env.nodeEnv });
+  res.json({
+    success: true,
+    service: "cashlytics-api-v2",
+    env: env.nodeEnv,
+    ai: {
+      provider: env.aiProvider,
+      groqConfigured: Boolean(env.groqApiKey),
+      groqModel: env.groqModel || "openai/gpt-oss-120b",
+      ollamaConfigured: Boolean(env.ollamaBaseUrl),
+    },
+  });
 });
 
 app.use("/api/auth", authRoutes);
