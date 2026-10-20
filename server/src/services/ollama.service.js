@@ -190,11 +190,36 @@ function parseAndValidateResponse(rawText, defaultFallback = {}) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Startup diagnostics (masked, safe to log)
+// ---------------------------------------------------------------------------
+const configuredGroqKey = (env.groqApiKey || "").trim();
+const configuredGroqModel = (env.groqModel || "openai/gpt-oss-120b").trim();
+
+if (env.nodeEnv === "production") {
+  if (configuredGroqKey) {
+    console.log(
+      `[AI] Production environment (Render): Groq cloud provider active (model: "${configuredGroqModel}")`
+    );
+  } else {
+    console.warn(
+      "[AI] WARNING: Production environment (Render), but GROQ_API_KEY is missing! AI chat will return fallback responses until GROQ_API_KEY is added in Render environment."
+    );
+  }
+} else {
+  console.log(
+    `[AI] Local development environment: Ollama provider active at ${env.ollamaBaseUrl} (model: "${env.ollamaModel}")`
+  );
+  if (configuredGroqKey) {
+    console.log(`[AI] Groq cloud fallback available if Ollama is stopped.`);
+  }
+}
+
 const GROQ_TIMEOUT_MS = 25_000;
 
 async function callGroq(cleanPrompt, context = {}) {
   if (!env.groqApiKey) {
-    console.warn("Groq API key is not configured.");
+    console.warn("[AI] Groq API key is not configured in environment variables.");
     return null;
   }
 
@@ -252,9 +277,9 @@ async function callGroq(cleanPrompt, context = {}) {
     };
   } catch (err) {
     if (err.name === "AbortError") {
-      console.warn("Groq request timed out.");
+      console.warn("[AI] Groq request timed out.");
     } else {
-      console.warn(`Groq unavailable: ${err.message}`);
+      console.warn(`[AI] Groq unavailable: ${err.message}`);
     }
     return null;
   } finally {
@@ -273,14 +298,15 @@ async function callOllama(cleanPrompt, context = {}) {
   }, OLLAMA_TIMEOUT_MS);
 
   try {
+    const modelToTry = env.ollamaModel || "llama3.2";
     const body = {
-      model: env.ollamaModel,
+      model: modelToTry,
       stream: false,
       format: "json",
       prompt: buildPrompt(cleanPrompt, context),
     };
 
-    const response = await fetch(`${env.ollamaBaseUrl}/api/generate`, {
+    let response = await fetch(`${env.ollamaBaseUrl}/api/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -288,6 +314,18 @@ async function callOllama(cleanPrompt, context = {}) {
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+
+    // Resilience: if exact model name wasn't found, try alternative tag (llama3.2 <-> llama3.2:3b)
+    if (!response.ok && response.status === 404) {
+      const altModel = modelToTry === "llama3.2" ? "llama3.2:3b" : "llama3.2";
+      body.model = altModel;
+      response = await fetch(`${env.ollamaBaseUrl}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
@@ -312,9 +350,9 @@ async function callOllama(cleanPrompt, context = {}) {
     };
   } catch (err) {
     if (err.name === "AbortError") {
-      console.warn("Ollama request timed out.");
+      console.warn("[AI] Ollama request timed out.");
     } else {
-      console.warn(`Ollama unavailable: ${err.message}`);
+      console.warn(`[AI] Ollama unavailable: ${err.message}`);
     }
     return null;
   } finally {
@@ -337,25 +375,39 @@ async function chat(prompt, context = {}) {
     };
   }
 
-  // 1. If provider is explicitly 'groq' or in production (e.g. deployed on Render):
-  const preferGroq = env.aiProvider === "groq" || env.nodeEnv === "production";
+  // Automatic provider selection:
+  // - Production (Render / NODE_ENV === 'production'): Groq API
+  // - Local development (NODE_ENV !== 'production'): Ollama with llama3.2
+  // Can be manually forced via AI_PROVIDER='groq' or AI_PROVIDER='ollama'
+  const isProduction = env.nodeEnv === "production";
+  const explicitProvider = (env.aiProvider || "").toLowerCase().trim();
 
-  if (preferGroq) {
+  const useGroq =
+    explicitProvider === "groq" || (isProduction && explicitProvider !== "ollama");
+
+  if (useGroq) {
+    console.log(
+      `[AI] Production/Groq mode: routing question to Groq (${env.groqModel || "openai/gpt-oss-120b"})...`
+    );
     const groqResult = await callGroq(cleanPrompt, context);
     if (groqResult) return groqResult;
+  } else {
+    console.log(
+      `[AI] Local development mode: routing question to Ollama (${env.ollamaModel})...`
+    );
+    const ollamaResult = await callOllama(cleanPrompt, context);
+    if (ollamaResult) return ollamaResult;
+
+    // Graceful fallback for local development if Ollama service is stopped
+    if (env.groqApiKey) {
+      console.log("[AI] Local Ollama unavailable, falling back to Groq API...");
+      const groqFallback = await callGroq(cleanPrompt, context);
+      if (groqFallback) return groqFallback;
+    }
   }
 
-  // 2. Otherwise (local development): try Ollama first
-  const ollamaResult = await callOllama(cleanPrompt, context);
-  if (ollamaResult) return ollamaResult;
-
-  // 3. Fallback to Groq if local Ollama wasn't available
-  if (!preferGroq && env.groqApiKey) {
-    const groqFallback = await callGroq(cleanPrompt, context);
-    if (groqFallback) return groqFallback;
-  }
-
-  // 4. Default safe response if no LLM service responds
+  // Fallback to contextual financial response if no LLM service is reachable
+  console.warn("[AI] No AI provider responded, returning contextual data fallback.");
   return {
     source: "fallback",
     ...fallbackReply(context),
