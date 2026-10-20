@@ -104,28 +104,75 @@ async function sendViaBrevo(to, subject, html, text) {
     throw error;
   }
 
-  const SibApiV3Sdk = require("@getbrevo/brevo");
-  const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-  apiInstance.authentications["apiKey"].apiKey = apiKey;
-
-  const email = new SibApiV3Sdk.SendSmtpEmail();
-  email.sender = {
-    name: fromName,
-    email: fromEmail,
-  };
-  email.to = [{ email: to }];
-  email.subject = subject;
-  email.htmlContent = html;
-  email.textContent = text;
-
   try {
-    const data = await apiInstance.sendTransacEmail(email);
-    const messageId =
-      data?.messageId || data?.body?.messageId || (data?.response ? "accepted" : "sent");
-    return { delivered: true, messageId };
+    const BrevoSdk = require("@getbrevo/brevo");
+
+    // Support @getbrevo/brevo v6+ (BrevoClient)
+    if (BrevoSdk && BrevoSdk.BrevoClient) {
+      const client = new BrevoSdk.BrevoClient({ apiKey });
+      const result = await client.transactionalEmails.sendTransacEmail({
+        sender: { name: fromName, email: fromEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+      });
+      const messageId =
+        result?.messageId ||
+        (Array.isArray(result?.messageIds) ? result.messageIds[0] : null) ||
+        "sent";
+      return { delivered: true, messageId };
+    }
+
+    // Support legacy @getbrevo/brevo v1-v5 / sib-api-v3-sdk (TransactionalEmailsApi)
+    if (BrevoSdk && BrevoSdk.TransactionalEmailsApi) {
+      const apiInstance = new BrevoSdk.TransactionalEmailsApi();
+      if (apiInstance.authentications && apiInstance.authentications["apiKey"]) {
+        apiInstance.authentications["apiKey"].apiKey = apiKey;
+      }
+      const email = BrevoSdk.SendSmtpEmail ? new BrevoSdk.SendSmtpEmail() : {};
+      email.sender = { name: fromName, email: fromEmail };
+      email.to = [{ email: to }];
+      email.subject = subject;
+      email.htmlContent = html;
+      email.textContent = text;
+
+      const data = await apiInstance.sendTransacEmail(email);
+      const messageId =
+        data?.messageId || data?.body?.messageId || (data?.response ? "accepted" : "sent");
+      return { delivered: true, messageId };
+    }
+
+    // Direct REST API fallback via native fetch (Node 18+)
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: fromName, email: fromEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.message || data?.code || `HTTP ${response.status}`);
+    }
+    return { delivered: true, messageId: data?.messageId || "sent" };
   } catch (err) {
     let detail = err.message;
-    if (err.response && err.response.body) {
+    if (err.body) {
+      detail =
+        typeof err.body === "object"
+          ? err.body.message || JSON.stringify(err.body)
+          : String(err.body);
+    } else if (err.response && err.response.body) {
       if (typeof err.response.body === "object") {
         detail =
           err.response.body.message ||
