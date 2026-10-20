@@ -230,29 +230,43 @@ async function callGroq(cleanPrompt, context = {}) {
 
   try {
     const promptText = buildPrompt(cleanPrompt, context);
-    const response = await fetch(`${env.groqBaseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${env.groqApiKey}`,
-      },
-      body: JSON.stringify({
-        model: env.groqModel || "openai/gpt-oss-120b",
-        messages: [
-          {
-            role: "system",
-            content: "You are Cashlytics, an AI personal finance assistant. Always output valid JSON exactly matching the requested schema.",
-          },
-          {
-            role: "user",
-            content: promptText,
-          },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.2,
-      }),
-      signal: controller.signal,
-    });
+    const requestedModel = env.groqModel || "openai/gpt-oss-120b";
+
+    const makeRequest = (modelName) =>
+      fetch(`${env.groqBaseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.groqApiKey}`,
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are Cashlytics, an AI personal finance assistant. Always output valid JSON exactly matching the requested schema.",
+            },
+            {
+              role: "user",
+              content: promptText,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.2,
+        }),
+        signal: controller.signal,
+      });
+
+    let response = await makeRequest(requestedModel);
+
+    // If configured model is not accessible (e.g. 404 model_not_found), fallback to available model
+    if (!response.ok && response.status === 404 && requestedModel !== "openai/gpt-oss-120b") {
+      console.warn(
+        `[AI] Groq model "${requestedModel}" not found on account (404). Falling back to "openai/gpt-oss-120b"...`
+      );
+      response = await makeRequest("openai/gpt-oss-120b");
+    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
