@@ -22,10 +22,29 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(helmet());
-const allowedOrigins = env.clientOrigin.includes(",")
+const configuredOrigins = env.clientOrigin.includes(",")
   ? env.clientOrigin.split(",").map((s) => s.trim())
-  : env.clientOrigin;
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+  : [env.clientOrigin.trim()];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (configuredOrigins.includes(origin)) return callback(null, true);
+      if (/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) {
+        return callback(null, true);
+      }
+      if (
+        /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+        /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(apiLimiter);
 
