@@ -4,6 +4,7 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Layout from "./components/Layout";
+import LoadingScreen from "./components/LoadingScreen";
 import Dashboard from "./pages/Dashboard";
 import TransactionsPage from "./pages/TransactionsPage";
 import SmartCapture from "./pages/SmartCapture";
@@ -114,32 +115,7 @@ export default function App() {
   // ---------------------------------------------------------
 
   if (loading) {
-    return (
-      <div
-        className="h-screen flex items-center justify-center"
-        style={{ background: "var(--background)" }}
-      >
-        <div className="text-center">
-          <div
-            className="inline-flex items-center justify-center rounded-sm text-xl font-bold mb-4"
-            style={{
-              width: "48px",
-              height: "48px",
-              background:
-                "linear-gradient(135deg, #10b981, #059669)",
-              color: "#052e16",
-              fontFamily: "var(--font-jetbrains)",
-            }}
-          >
-            C
-          </div>
-
-          <p style={{ color: "var(--muted-foreground)" }}>
-            Loading...
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading..." />;
   }
 
   // ---------------------------------------------------------
