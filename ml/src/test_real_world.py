@@ -64,10 +64,24 @@ def main():
 
     df["predicted_category"] = predictions
 
+    # Normalize categories to standard backend taxonomy
+    category_map = {
+        "Shopping & Retail": "Shopping",
+        "Transportation": "Transport",
+        "Bills & Utilities": "Bills",
+        "Healthcare & Medical": "Healthcare",
+        "Entertainment & Recreation": "Entertainment",
+        "Financial Services": "Investment",
+        "Rent & Housing": "Bills",
+        "Government & Legal": "Bills",
+    }
+    df["normalized_expected"] = df["category"].map(lambda c: category_map.get(c, c))
+    df["normalized_predicted"] = df["predicted_category"].map(lambda c: category_map.get(c, c))
+
     # Accuracy
     accuracy = accuracy_score(
-        df["category"],
-        df["predicted_category"]
+        df["normalized_expected"],
+        df["normalized_predicted"]
     )
 
     print("\n===================================")
@@ -82,8 +96,8 @@ def main():
 
     print(
         classification_report(
-            df["category"],
-            df["predicted_category"],
+            df["normalized_expected"],
+            df["normalized_predicted"],
             zero_division=0
         )
     )
@@ -96,9 +110,9 @@ def main():
     for _, row in df.iterrows():
 
         status = (
-            "✓"
-            if row["category"] == row["predicted_category"]
-            else "✗"
+            "[PASS]"
+            if row["normalized_expected"] == row["normalized_predicted"]
+            else "[DIFF]"
         )
 
         print(
@@ -106,11 +120,11 @@ def main():
         )
 
         print(
-            f"  Expected : {row['category']}"
+            f"  Expected : {row['category']} -> {row['normalized_expected']}"
         )
 
         print(
-            f"  Predicted: {row['predicted_category']}"
+            f"  Predicted: {row['predicted_category']} -> {row['normalized_predicted']}"
         )
 
 
