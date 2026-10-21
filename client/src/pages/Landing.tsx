@@ -18,112 +18,164 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
     }
   };
 
+  const [activeNav, setActiveNav] = useState("Home");
+  const [isDarkTheme, setIsDarkTheme] = useState(true);
+
+  const navItems = [
+    { label: "Home", id: "hero" },
+    { label: "About", id: "how-it-works" },
+    { label: "Services", id: "features" },
+    { label: "Pricing", id: "pricing" },
+    { label: "Blog", id: "insights" },
+    { label: "Contact", id: "contact" },
+  ];
+
+  const handleNavClick = (item: { label: string; id: string }) => {
+    setActiveNav(item.label);
+    scrollTo(item.id);
+  };
+
   return (
     <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-[#F7F6F0] text-[#050505] antialiased selection:bg-[#C8FF45] selection:text-[#050505]">
       {/* ========================================================= */}
-      {/* COMPACT NAVIGATION BAR                                     */}
+      {/* SLEEK DARK NAVIGATION BAR — CASHLYTICS PALETTE             */}
       {/* ========================================================= */}
-      <header className="sticky top-0 z-50 bg-[#F7F6F0]/90 backdrop-blur-md border-b border-[#050505]/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Brand Logo */}
-          <div className="flex items-center gap-3">
-            <Logo size={28} showText={true} rounded="rounded-md" />
+      <header className="sticky top-0 z-50 bg-[#050505]/95 backdrop-blur-md border-b border-white/[0.08] transition-all">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-18 flex items-center justify-between">
+          {/* Brand Logo & Name */}
+          <div
+            className="flex items-center gap-2.5 cursor-pointer select-none group"
+            onClick={() => handleNavClick({ label: "Home", id: "hero" })}
+          >
+            <Logo size={30} showText={false} rounded="rounded-lg" />
+            <span className="font-extrabold text-[15px] sm:text-base tracking-[0.14em] text-white font-mono uppercase group-hover:text-[#C8FF45] transition-colors">
+              CASHLYTICS
+            </span>
           </div>
 
-          {/* Minimal Nav Links */}
-          <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium tracking-wide text-[#6E6E66]">
-            <button
-              type="button"
-              onClick={() => scrollTo("how-it-works")}
-              className="hover:text-[#050505] transition-colors cursor-pointer"
-            >
-              How It Works
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("features")}
-              className="hover:text-[#050505] transition-colors cursor-pointer"
-            >
-              Features
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("insights")}
-              className="hover:text-[#050505] transition-colors cursor-pointer"
-            >
-              Insights
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("benefits")}
-              className="hover:text-[#050505] transition-colors cursor-pointer"
-            >
-              About
-            </button>
+          {/* Center: Horizontal Navigation Links */}
+          <nav className="hidden md:flex items-center gap-7 lg:gap-9 text-sm font-medium">
+            {navItems.map((item) => {
+              const isActive = activeNav === item.label;
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => handleNavClick(item)}
+                  className={`transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? "text-[#C8FF45] font-semibold"
+                      : "text-[#A4A49C] hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Right Action Buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Right: Actions (Sign In + Get Started + Moon Icon) */}
+          <div className="hidden md:flex items-center gap-3 lg:gap-4">
             <button
               type="button"
               onClick={onSignIn}
-              className="text-[13px] font-medium text-[#050505] hover:text-[#050505]/70 px-3 py-1.5 transition-colors cursor-pointer"
+              className="text-xs lg:text-sm font-medium text-[#A4A49C] hover:text-white transition-colors cursor-pointer px-2 py-1"
             >
               Sign In
             </button>
+
+            {/* Signature Electric Lime Button matching Cashlytics Brand */}
             <button
               type="button"
               onClick={onGetStarted}
-              className="text-[13px] font-bold px-5 py-2 rounded-full bg-[#C8FF45] text-[#050505] hover:bg-[#A8E63B] transition-all transform active:scale-95 shadow-sm cursor-pointer"
+              className="text-xs lg:text-sm font-extrabold px-5 py-2.5 rounded-xl bg-[#C8FF45] text-[#050505] hover:bg-[#A8E63B] hover:shadow-lg hover:shadow-[#C8FF45]/25 transition-all transform active:scale-95 cursor-pointer shadow-sm"
             >
               Get Started
             </button>
+
+            {/* Dark Theme / Moon Icon matching Cashlytics Brand */}
+            <button
+              type="button"
+              onClick={() => setIsDarkTheme((prev) => !prev)}
+              title={isDarkTheme ? "Switch theme" : "Dark theme"}
+              aria-label="Toggle theme"
+              className="p-2 rounded-lg text-[#A4A49C] hover:text-[#C8FF45] hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            </button>
           </div>
 
-          {/* Mobile Hamburger Button */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((o) => !o)}
-            aria-label="Toggle navigation menu"
-            className="md:hidden p-2 text-[#050505] cursor-pointer"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              {mobileMenuOpen ? (
-                <path d="M18 6L6 18M6 6l12 12" />
-              ) : (
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
+          {/* Mobile Actions: Moon Icon & Hamburger */}
+          <div className="flex md:hidden items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setIsDarkTheme((prev) => !prev)}
+              aria-label="Toggle theme"
+              className="p-2 text-[#A4A49C] hover:text-[#C8FF45]"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label="Toggle navigation menu"
+              className="p-2 text-white cursor-pointer"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                {mobileMenuOpen ? (
+                  <path d="M18 6L6 18M6 6l12 12" />
+                ) : (
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-b border-[#050505]/10 px-6 py-4 bg-[#F7F6F0] space-y-3 text-sm">
-            <button type="button" onClick={() => scrollTo("how-it-works")} className="block w-full text-left py-1 text-[#6E6E66]">
-              How It Works
-            </button>
-            <button type="button" onClick={() => scrollTo("features")} className="block w-full text-left py-1 text-[#6E6E66]">
-              Features
-            </button>
-            <button type="button" onClick={() => scrollTo("insights")} className="block w-full text-left py-1 text-[#6E6E66]">
-              Insights
-            </button>
-            <button type="button" onClick={() => scrollTo("benefits")} className="block w-full text-left py-1 text-[#6E6E66]">
-              About
-            </button>
-            <div className="pt-2 border-t border-[#050505]/10 flex flex-col gap-2">
+          <div className="md:hidden border-b border-white/10 px-6 py-5 bg-[#050505]/98 backdrop-blur-lg space-y-3 text-sm">
+            {navItems.map((item) => {
+              const isActive = activeNav === item.label;
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => handleNavClick(item)}
+                  className={`block w-full text-left py-1.5 transition-colors cursor-pointer ${
+                    isActive ? "text-[#C8FF45] font-semibold" : "text-[#A4A49C] hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+            <div className="pt-3 border-t border-white/10 flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={onSignIn}
-                className="w-full py-2 text-center font-medium text-[#050505] rounded-lg border border-[#050505]/15"
+                className="w-full py-2.5 text-center font-medium text-white rounded-xl border border-white/15 hover:bg-white/5 transition-colors cursor-pointer"
               >
                 Sign In
               </button>
               <button
                 type="button"
                 onClick={onGetStarted}
-                className="w-full py-2.5 text-center font-bold bg-[#C8FF45] text-[#050505] rounded-full"
+                className="w-full py-2.5 text-center font-extrabold bg-[#C8FF45] hover:bg-[#A8E63B] text-[#050505] rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 Get Started
               </button>
@@ -136,7 +188,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
         {/* ========================================================= */}
         {/* HERO SECTION — EXACT MATCH WITH REFERENCE COMPOSITION     */}
         {/* ========================================================= */}
-        <section className="relative rounded-[28px] sm:rounded-[36px] bg-[#050505] text-white p-6 sm:p-10 lg:p-14 overflow-hidden border border-[#050505]">
+        <section id="hero" className="relative rounded-[28px] sm:rounded-[36px] bg-[#050505] text-white p-6 sm:p-10 lg:p-14 overflow-hidden border border-[#050505]">
           {/* Subtle Corner Glow */}
           <div
             className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[140px] opacity-15 pointer-events-none"
@@ -584,6 +636,99 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
         </section>
 
         {/* ========================================================= */}
+        {/* PRICING PLANS SECTION                                     */}
+        {/* ========================================================= */}
+        <section id="pricing" className="py-8 sm:py-12 border-t border-[#050505]/10 space-y-8">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <span className="text-xs font-mono font-bold tracking-widest uppercase text-[#15803D]">
+              TRANSPARENT PRICING
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-heading font-black tracking-tight uppercase leading-none text-[#050505]">
+              SIMPLE PLANS. <br />
+              POWERFUL INSIGHTS.
+            </h2>
+            <p className="text-sm text-[#6E6E66]">
+              Choose the plan that fits your financial journey. Upgrade or cancel anytime.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Starter Free */}
+            <div className="rounded-[28px] bg-[#050505] text-white p-7 flex flex-col justify-between border border-white/10 space-y-6">
+              <div className="space-y-4">
+                <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Starter</span>
+                <div className="text-3xl font-black font-mono">₹0 <span className="text-xs text-zinc-400 font-sans font-normal">/ forever</span></div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Basic transaction tracking and automated category tagging for personal budgeting.
+                </p>
+                <div className="pt-2 space-y-2 text-xs text-zinc-300">
+                  <div className="flex items-center gap-2">✓ Up to 100 transactions/mo</div>
+                  <div className="flex items-center gap-2">✓ 13 canonical categories</div>
+                  <div className="flex items-center gap-2">✓ CSV & SMS upload</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onGetStarted}
+                className="w-full py-2.5 rounded-xl border border-white/20 text-white font-semibold text-xs hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                Get Started Free
+              </button>
+            </div>
+
+            {/* Pro Tier (Popular) */}
+            <div className="rounded-[28px] bg-[#0A0C0A] text-white p-7 flex flex-col justify-between border-2 border-[#C8FF45] relative shadow-xl shadow-[#C8FF45]/10 space-y-6">
+              <div className="absolute -top-3 right-6 bg-[#C8FF45] text-[#050505] text-[10px] font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                Most Popular
+              </div>
+              <div className="space-y-4">
+                <span className="text-xs font-mono text-[#C8FF45] uppercase tracking-wider">Pro Intelligence</span>
+                <div className="text-3xl font-black font-mono">₹299 <span className="text-xs text-zinc-400 font-sans font-normal">/ month</span></div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Contextual AI financial assistant, What-If simulator & unlimited transactions.
+                </p>
+                <div className="pt-2 space-y-2 text-xs text-zinc-200">
+                  <div className="flex items-center gap-2 text-[#C8FF45]">✓ Everything in Starter</div>
+                  <div className="flex items-center gap-2">✓ Unlimited AI Assistant queries</div>
+                  <div className="flex items-center gap-2">✓ What-If scenario simulator</div>
+                  <div className="flex items-center gap-2">✓ Real-time anomaly alerts</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onGetStarted}
+                className="w-full py-2.5 rounded-xl bg-[#C8FF45] hover:bg-[#A8E63B] text-[#050505] font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                Start Free 14-Day Trial
+              </button>
+            </div>
+
+            {/* Lifetime Access */}
+            <div className="rounded-[28px] bg-[#050505] text-white p-7 flex flex-col justify-between border border-white/10 space-y-6">
+              <div className="space-y-4">
+                <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Lifetime Pass</span>
+                <div className="text-3xl font-black font-mono">₹2,499 <span className="text-xs text-zinc-400 font-sans font-normal">/ one-time</span></div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Pay once, own forever. Full access to all current and future intelligence features.
+                </p>
+                <div className="pt-2 space-y-2 text-xs text-zinc-300">
+                  <div className="flex items-center gap-2">✓ All Pro features forever</div>
+                  <div className="flex items-center gap-2">✓ Priority model responses</div>
+                  <div className="flex items-center gap-2">✓ Early access to new tools</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onGetStarted}
+                className="w-full py-2.5 rounded-xl border border-white/20 text-white font-semibold text-xs hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                Get Lifetime Access
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================= */}
         {/* FINAL CALL TO ACTION                                       */}
         {/* ========================================================= */}
         <section className="rounded-[28px] sm:rounded-[36px] bg-[#050505] text-white p-8 sm:p-14 lg:p-16 text-center space-y-6 border border-[#050505] relative overflow-hidden">
@@ -622,7 +767,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
       {/* ========================================================= */}
       {/* MINIMAL FOOTER                                            */}
       {/* ========================================================= */}
-      <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-12 border-t border-[#050505]/10 text-xs text-[#6E6E66] flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer id="contact" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-12 border-t border-[#050505]/10 text-xs text-[#6E6E66] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Logo size={20} showText={true} rounded="rounded" />
           <span className="text-[#A4A49C]">· Personal Finance Intelligence</span>

@@ -6,14 +6,14 @@
 export const CONFIG = {
   // Backend API Configuration
   api: {
-    baseUrl: process.env.REACT_APP_API_URL || "http://127.0.0.1:5001/api",
+    baseUrl: (import.meta as any).env?.VITE_API_URL || process.env.REACT_APP_API_URL || "http://127.0.0.1:5001/api",
     timeout: 30000,
     retries: 3,
   },
 
   // ML Service Configuration
   ml: {
-    baseUrl: process.env.REACT_APP_ML_URL || "http://127.0.0.1:8000",
+    baseUrl: (import.meta as any).env?.VITE_ML_URL || process.env.REACT_APP_ML_URL || "http://127.0.0.1:8000",
     timeout: 30000,
     services: {
       categoryPrediction: "/predict-category",
