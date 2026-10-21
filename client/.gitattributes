@@ -5,6 +5,9 @@
 # Images & Graphics
 # ---------------------------------------------------------------------------
 *.png                filter=lfs diff=lfs merge=lfs -text
+# Exempt Cashlytics logo images from LFS so production build hosts get the real files
+src/assets/logo.png  !filter !diff !merge
+public/logo.png      !filter !diff !merge
 *.jpg                filter=lfs diff=lfs merge=lfs -text
 *.jpeg               filter=lfs diff=lfs merge=lfs -text
 *.gif                filter=lfs diff=lfs merge=lfs -text
