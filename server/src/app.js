@@ -13,6 +13,7 @@ const budgetRoutes = require("./routes/budget.routes");
 const goalRoutes = require("./routes/goal.routes");
 const assistantRoutes = require("./routes/assistant.routes");
 const adminRoutes = require("./routes/admin.routes");
+const mlRoutes = require("./routes/ml.routes");
 
 const app = express();
 
@@ -22,29 +23,10 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(helmet());
-const configuredOrigins = env.clientOrigin.includes(",")
+const allowedOrigins = env.clientOrigin.includes(",")
   ? env.clientOrigin.split(",").map((s) => s.trim())
-  : [env.clientOrigin.trim()];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (configuredOrigins.includes(origin)) return callback(null, true);
-      if (/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) {
-        return callback(null, true);
-      }
-      if (
-        /^http:\/\/localhost(:\d+)?$/.test(origin) ||
-        /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)
-      ) {
-        return callback(null, true);
-      }
-      callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: true,
-  })
-);
+  : env.clientOrigin;
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
 app.use(apiLimiter);
 
@@ -70,6 +52,7 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/assistant", assistantRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/ml", mlRoutes);
 
 app.use((req, res) => {
   console.warn(`404 ${req.method} ${req.path}`);
