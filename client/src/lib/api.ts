@@ -614,16 +614,19 @@ export async function predictTransactionCategory(
   description: string,
   amount: number
 ): Promise<CategoryPrediction> {
-  return mlRequest<CategoryPrediction>(
-    "/predict-category",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        description: description.trim(),
-        amount: Math.abs(amount),
-      }),
-    }
-  );
+  // Call the Node.js backend proxy instead of FastAPI directly.
+  // The backend forwards this to the ML service using ML_SERVICE_URL
+  // (already configured on Render), so the browser never needs to
+  // know the ML service URL and localhost:8000 is never used.
+  const res = await request<CategoryPrediction>("/ml/predict-category", {
+    method: "POST",
+    body: JSON.stringify({
+      description: description.trim(),
+      amount: Math.abs(amount) || 1, // FastAPI requires amount > 0
+    }),
+  });
+  // The backend wraps in { success, data }; unwrap the inner data.
+  return (res as any).data as CategoryPrediction;
 }
 
 export async function detectTransactionAnomaly(
