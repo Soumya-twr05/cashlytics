@@ -25,7 +25,6 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
     { label: "Home", id: "hero" },
     { label: "About", id: "how-it-works" },
     { label: "Services", id: "features" },
-    { label: "Pricing", id: "pricing" },
     { label: "Blog", id: "insights" },
     { label: "Contact", id: "contact" },
   ];
@@ -36,7 +35,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
   };
 
   return (
-    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-[#F7F6F0] text-[#050505] antialiased selection:bg-[#C8FF45] selection:text-[#050505]">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-[var(--background)] text-[#050505] antialiased selection:bg-[var(--accent)] selection:text-[#050505]">
       {/* ========================================================= */}
       {/* SLEEK DARK NAVIGATION BAR — CASHLYTICS PALETTE             */}
       {/* ========================================================= */}
@@ -65,7 +64,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
                   className={`transition-all duration-200 cursor-pointer ${
                     isActive
                       ? "text-[#C8FF45] font-semibold"
-                      : "text-[#A4A49C] hover:text-white"
+                      : "text-[#A4A49C] hover:text-[#A8E63B]"
                   }`}
                 >
                   {item.label}
@@ -101,7 +100,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
               aria-label="Toggle theme"
               className="p-2 rounded-lg text-[#A4A49C] hover:text-[#C8FF45] hover:bg-white/10 transition-colors cursor-pointer"
             >
-              <svg
+              {/* <svg
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -112,7 +111,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
                 strokeLinejoin="round"
               >
                 <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-              </svg>
+              </svg> */}
             </button>
           </div>
 
@@ -124,9 +123,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
               aria-label="Toggle theme"
               className="p-2 text-[#A4A49C] hover:text-[#C8FF45]"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-              </svg>
+
             </button>
 
             <button
@@ -635,99 +632,7 @@ export default function Landing({ onGetStarted, onSignIn }: LandingProps) {
           </div>
         </section>
 
-        {/* ========================================================= */}
-        {/* PRICING PLANS SECTION                                     */}
-        {/* ========================================================= */}
-        <section id="pricing" className="py-8 sm:py-12 border-t border-[#050505]/10 space-y-8">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs font-mono font-bold tracking-widest uppercase text-[#15803D]">
-              TRANSPARENT PRICING
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-heading font-black tracking-tight uppercase leading-none text-[#050505]">
-              SIMPLE PLANS. <br />
-              POWERFUL INSIGHTS.
-            </h2>
-            <p className="text-sm text-[#6E6E66]">
-              Choose the plan that fits your financial journey. Upgrade or cancel anytime.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Starter Free */}
-            <div className="rounded-[28px] bg-[#050505] text-white p-7 flex flex-col justify-between border border-white/10 space-y-6">
-              <div className="space-y-4">
-                <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Starter</span>
-                <div className="text-3xl font-black font-mono">₹0 <span className="text-xs text-zinc-400 font-sans font-normal">/ forever</span></div>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Basic transaction tracking and automated category tagging for personal budgeting.
-                </p>
-                <div className="pt-2 space-y-2 text-xs text-zinc-300">
-                  <div className="flex items-center gap-2">✓ Up to 100 transactions/mo</div>
-                  <div className="flex items-center gap-2">✓ 13 canonical categories</div>
-                  <div className="flex items-center gap-2">✓ CSV & SMS upload</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={onGetStarted}
-                className="w-full py-2.5 rounded-xl border border-white/20 text-white font-semibold text-xs hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                Get Started Free
-              </button>
-            </div>
-
-            {/* Pro Tier (Popular) */}
-            <div className="rounded-[28px] bg-[#0A0C0A] text-white p-7 flex flex-col justify-between border-2 border-[#C8FF45] relative shadow-xl shadow-[#C8FF45]/10 space-y-6">
-              <div className="absolute -top-3 right-6 bg-[#C8FF45] text-[#050505] text-[10px] font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                Most Popular
-              </div>
-              <div className="space-y-4">
-                <span className="text-xs font-mono text-[#C8FF45] uppercase tracking-wider">Pro Intelligence</span>
-                <div className="text-3xl font-black font-mono">₹299 <span className="text-xs text-zinc-400 font-sans font-normal">/ month</span></div>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Contextual AI financial assistant, What-If simulator & unlimited transactions.
-                </p>
-                <div className="pt-2 space-y-2 text-xs text-zinc-200">
-                  <div className="flex items-center gap-2 text-[#C8FF45]">✓ Everything in Starter</div>
-                  <div className="flex items-center gap-2">✓ Unlimited AI Assistant queries</div>
-                  <div className="flex items-center gap-2">✓ What-If scenario simulator</div>
-                  <div className="flex items-center gap-2">✓ Real-time anomaly alerts</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={onGetStarted}
-                className="w-full py-2.5 rounded-xl bg-[#C8FF45] hover:bg-[#A8E63B] text-[#050505] font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
-              >
-                Start Free 14-Day Trial
-              </button>
-            </div>
-
-            {/* Lifetime Access */}
-            <div className="rounded-[28px] bg-[#050505] text-white p-7 flex flex-col justify-between border border-white/10 space-y-6">
-              <div className="space-y-4">
-                <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Lifetime Pass</span>
-                <div className="text-3xl font-black font-mono">₹2,499 <span className="text-xs text-zinc-400 font-sans font-normal">/ one-time</span></div>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Pay once, own forever. Full access to all current and future intelligence features.
-                </p>
-                <div className="pt-2 space-y-2 text-xs text-zinc-300">
-                  <div className="flex items-center gap-2">✓ All Pro features forever</div>
-                  <div className="flex items-center gap-2">✓ Priority model responses</div>
-                  <div className="flex items-center gap-2">✓ Early access to new tools</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={onGetStarted}
-                className="w-full py-2.5 rounded-xl border border-white/20 text-white font-semibold text-xs hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                Get Lifetime Access
-              </button>
-            </div>
-          </div>
-        </section>
-
+       
         {/* ========================================================= */}
         {/* FINAL CALL TO ACTION                                       */}
         {/* ========================================================= */}
